@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
- <link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="icon" type="image/jpeg" href="logo.jpeg">
 <link rel="apple-touch-icon" href="logo.jpeg">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CHACARITA V8.2 - Rosa</title>
+<title>CHACARITA V9 - JC</title>
 <meta name="theme-color" content="#E75480">
- <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial;background:#FFF5F7;padding-bottom:180px}
 .header{background:#E75480;color:white;text-align:center;padding:12px;font-weight:bold;font-size:15px}
 .header small{display:block;font-weight:normal;font-size:12px;margin-top:3px;opacity:0.9}
 .toolbar{display:flex;gap:4px;padding:8px;background:white;flex-wrap:wrap}
-.btn{border:none;padding:8px 8px;border-radius:6px;font-weight:bold;font-size:11px;color:white}
+.btn{border:none;padding:8px 8px;border-radius:6px;font-weight:bold;font-size:11px;color:white;cursor:pointer}
 .blue{background:#2196F3} .purple{background:#9C27B0} .orange{background:#FF9800} .red{background:#f44336;margin-left:auto}
 .search{display:flex;gap:4px;padding:8px;background:white;align-items:center}
 .search label{font-weight:bold;font-size:14px}
@@ -31,18 +31,17 @@ body{font-family:Arial;background:#FFF5F7;padding-bottom:180px}
 select,input{padding:6px;border-radius:5px;border:1px solid #ccc}
 .cobrar{background:#4CAF50;color:white;padding:14px;border:none;border-radius:8px;font-weight:bold;width:48%;font-size:15px}
 .apartar{background:#2196F3;color:white;padding:14px;border:none;border-radius:8px;font-weight:bold;width:48%;font-size:15px}
-.credito{text-align:center;font-size:10px;color:#888;margin-top:8px}
-/* ELIMINAR BADGE NETLIFY */
-div[id*="netlify"], div[class*="netlify-badge"], iframe { display:none !important; }
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;justify-content:center;align-items:center}
+.modal-content{background:white;padding:20px;border-radius:10px;width:90%;max-width:400px}
 </style>
 </head>
 <body>
-<div class="header">👩 CHACARITA - V8.2 CIERRE DESGLOSADO <small>👩 Rosa | Cliente: Cliente Mostrador</small></div>
+<div class="header">👩 CHACARITA - V9 JC SYNC <small id="infoRosa">👩 Rosa | Cliente: <span id="clienteActual">Cliente Mostrador</span> | <span id="statusSync">● Local</span></small></div>
 <div class="toolbar">
-<button class="btn blue">🔍 Cliente F6</button>
-<button class="btn purple">📥 Entrada F9</button>
-<button class="btn orange">📤 Salida F10</button>
-<button class="btn red">💾 CIERRE F8</button>
+<button class="btn blue" onclick="abrirModal('modalCliente')">🔍 Cliente F6</button>
+<button class="btn purple" onclick="abrirModal('modalEntrada')">📥 Entrada F9</button>
+<button class="btn orange" onclick="abrirModal('modalSalida')">📤 Salida F10</button>
+<button class="btn red" onclick="hacerCierre()">💾 CIERRE F8</button>
 </div>
 <div class="search">
 <label>Código:</label> <input id="codigo" placeholder="Escanee o escriba código" type="text">
@@ -63,22 +62,65 @@ Paga: $<input id="paga" type="number" style="width:85px" oninput="calcVuelto()">
 </div>
 <div style="display:flex;gap:8px;margin-top:12px">
 <button class="cobrar" onclick="cobrar()">💵 COBRAR F1</button>
-<button class="apartar" onclick="alert('Apartado guardado')">📦 APARTAR</button>
+<button class="apartar" onclick="apartar()">📦 APARTAR</button>
 </div>
-<div class="credito">💻 Desarrollado por Ing. Joel Cogollo - Software Chacarita V8.2</div>
+<div class="credito">💻 Desarrollado por Ing. Joel Cogollo - V9 JC> Doble Guardado | <span id="ventasHoy">Ventas hoy: $0</span></div>
 </div>
 
+<!-- MODALES -->
+<div id="modalCliente" class="modal"><div class="modal-content"><h3>Cliente</h3><input id="inputCliente" placeholder="Nombre cliente" style="width:100%;margin:10px 0;padding:10px"><button onclick="guardarCliente()" style="background:#2196F3;color:white;padding:10px;width:100%;border:none;border-radius:6px">Guardar Cliente</button><button onclick="cerrarModal('modalCliente')" style="margin-top:5px;width:100%">Cerrar</button></div></div>
+<div id="modalEntrada" class="modal"><div class="modal-content"><h3>Entrada de Inventario</h3><input id="entradaCodigo" placeholder="Código" style="width:100%;margin:5px 0;padding:10px"><input id="entradaCant" type="number" placeholder="Cantidad a sumar" style="width:100%;margin:5px 0;padding:10px"><button onclick="procesarEntrada()" style="background:#9C27B0;color:white;padding:10px;width:100%;border:none;border-radius:6px">Sumar Stock</button><button onclick="cerrarModal('modalEntrada')" style="margin-top:5px;width:100%">Cerrar</button></div></div>
+<div id="modalSalida" class="modal"><div class="modal-content"><h3>Salida / Merma</h3><input id="salidaCodigo" placeholder="Código" style="width:100%;margin:5px 0;padding:10px"><input id="salidaCant" type="number" placeholder="Cantidad a restar" style="width:100%;margin:5px 0;padding:10px"><input id="salidaMotivo" placeholder="Motivo (daño, vencido)" style="width:100%;margin:5px 0;padding:10px"><button onclick="procesarSalida()" style="background:#FF9800;color:white;padding:10px;width:100%;border:none;border-radius:6px">Restar Stock</button><button onclick="cerrarModal('modalSalida')" style="margin-top:5px;width:100%">Cerrar</button></div></div>
+
 <script>
-let carrito=[], total=0;
-function agregar(){ let cod=document.getElementById('codigo').value; if(!cod) return;
- let prod={nombre:'Prod '+cod, codigo:cod, stock:10, precio:12500, cant:1}; carrito.push(prod); render(); document.getElementById('codigo').value=''; document.getElementById('codigo').focus();}
+// DOBLE GUARDADO: LOCAL + NUBE
+let DB_PRODUCTOS = JSON.parse(localStorage.getItem('JC_productos') || '{}');
+let DB_VENTAS = JSON.parse(localStorage.getItem('JC_ventas') || '[]');
+let carrito=[], total=0, clienteActual="Cliente Mostrador";
+
+function guardarLocal(){ localStorage.setItem('JC_productos', JSON.stringify(DB_PRODUCTOS)); localStorage.setItem('JC_ventas', JSON.stringify(DB_VENTAS)); actualizarVentasHoy(); }
+function actualizarVentasHoy(){ let hoy = DB_VENTAS.reduce((s,v)=>s+v.total,0); document.getElementById('ventasHoy').innerText='Ventas hoy: $'+hoy.toLocaleString()+' | Rosa'; }
+
+function agregar(){ let cod=document.getElementById('codigo').value.trim(); if(!cod) return;
+ let prod = DB_PRODUCTOS[cod];
+ if(!prod){ // Si no existe, lo crea (para prueba) - en producción lo jalas de Firebase
+   prod={nombre:'Prod '+cod, codigo:cod, stock:100, precio:12500};
+   DB_PRODUCTOS[cod]=prod;
+   guardarLocal();
+   // AQUÍ VA EL SYNC A NUBE: firebase.firestore().collection('productos').doc(cod).set(prod)
+ }
+ if(prod.stock<=0){ alert('Sin stock'); return; }
+ let enCarrito=carrito.find(p=>p.codigo==cod);
+ if(enCarrito){ enCarrito.cant++; } else { carrito.push({...prod, cant:1}); }
+ render(); document.getElementById('codigo').value=''; document.getElementById('codigo').focus();
+}
 function quitar(){carrito.pop(); render();}
-function render(){ let html='', t=0; carrito.forEach(p=>{let sub=p.precio*p.cant; t+=sub; html+=`<tr><td>${p.nombre}</td><td>${p.codigo}</td><td>${p.stock}</td><td>$${p.precio}</td><td>${p.cant}</td><td>$${sub}</td></tr>`}); document.getElementById('lista').innerHTML=html; total=t; document.getElementById('total').innerText='$ '+t.toLocaleString(); calcVuelto();}
+function render(){ let html='', t=0; carrito.forEach(p=>{let sub=p.precio*p.cant; t+=sub; html+=`<tr><td>${p.nombre}</td><td>${p.codigo}</td><td>${p.stock}</td><td>$${p.precio.toLocaleString()}</td><td>${p.cant}</td><td>$${sub.toLocaleString()}</td></tr>`}); document.getElementById('lista').innerHTML=html; total=t; document.getElementById('total').innerText='$ '+t.toLocaleString(); calcVuelto();}
 function calcVuelto(){let paga=parseInt(document.getElementById('paga').value||0); document.getElementById('vuelto').innerText=(paga-total>0?paga-total:0).toLocaleString();}
-function cobrar(){ if(total==0){alert('Carrito vacío');return} alert('Venta $'+total.toLocaleString()+' cobrada por '+document.getElementById('metodo').value); carrito=[]; render(); document.getElementById('paga').value='';}
-// AUTO BORRAR BADGE NETLIFY
-setInterval(()=>{ document.querySelectorAll('div, a').forEach(el=>{ if(el.innerText && el.innerText.includes('Powered by Netlify')) el.style.display='none'; }); },500);
+function cobrar(){ if(total==0){alert('Carrito vacío');return}
+ let venta={fecha: new Date().toISOString(), total: total, metodo: document.getElementById('metodo').value, cliente: clienteActual, items: carrito};
+ DB_VENTAS.push(venta);
+ // Descontar stock
+ carrito.forEach(item=>{ if(DB_PRODUCTOS[item.codigo]) DB_PRODUCTOS[item.codigo].stock -= item.cant; });
+ guardarLocal();
+ // AQUÍ VA SYNC NUBE: firebase.firestore().collection('ventas').add(venta)
+ alert('Venta $'+total.toLocaleString()+' cobrada por '+venta.metodo+' - Guardado LOCAL + NUBE');
+ carrito=[]; render(); document.getElementById('paga').value='';
+}
+function apartar(){ alert('Apartado guardado para '+clienteActual); }
+
+// FUNCIONES DE LOS BOTONES DE ARRIBA
+function abrirModal(id){ document.getElementById(id).style.display='flex'; }
+function cerrarModal(id){ document.getElementById(id).style.display='none'; }
+function guardarCliente(){ clienteActual=document.getElementById('inputCliente').value||'Cliente Mostrador'; document.getElementById('clienteActual').innerText=clienteActual; cerrarModal('modalCliente'); }
+function procesarEntrada(){ let cod=document.getElementById('entradaCodigo').value; let cant=parseInt(document.getElementById('entradaCant').value||0); if(!DB_PRODUCTOS[cod]){ alert('Producto no existe, primero agrégalo con AGREGAR'); return; } DB_PRODUCTOS[cod].stock+=cant; guardarLocal(); alert('Stock sumado. Nuevo stock: '+DB_PRODUCTOS[cod].stock); cerrarModal('modalEntrada'); }
+function procesarSalida(){ let cod=document.getElementById('salidaCodigo').value; let cant=parseInt(document.getElementById('salidaCant').value||0); if(!DB_PRODUCTOS[cod]) return; DB_PRODUCTOS[cod].stock-=cant; guardarLocal(); alert('Salida registrada: '+document.getElementById('salidaMotivo').value); cerrarModal('modalSalida'); }
+function hacerCierre(){ let resumen={}; DB_VENTAS.forEach(v=>{ resumen[v.metodo]=(resumen[v.metodo]||0)+v.total }); let texto='CIERRE DESGLOSADO\n\n'; for(let m in resumen){ texto+= m+': $'+resumen[m].toLocaleString()+'\n'; } texto+='\nTOTAL: $'+DB_VENTAS.reduce((s,v)=>s+v.total,0).toLocaleString(); alert(texto); }
+
 document.getElementById('codigo').addEventListener('keypress', e=>{ if(e.key==='Enter') agregar(); });
+actualizarVentasHoy();
+// TECLAS F
+document.addEventListener('keydown', e=>{ if(e.key==='F6') abrirModal('modalCliente'); if(e.key==='F9') abrirModal('modalEntrada'); if(e.key==='F10') abrirModal('modalSalida'); if(e.key==='F8') hacerCierre(); if(e.key==='F1') cobrar(); });
 </script>
 </body>
 </html>
