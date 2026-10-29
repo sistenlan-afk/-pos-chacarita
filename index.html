@@ -1,126 +1,232 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="icon" type="image/jpeg" href="logo.jpeg">
-<link rel="apple-touch-icon" href="logo.jpeg">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CHACARITA V9 - JC</title>
-<meta name="theme-color" content="#E75480">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHACARITA V10 JC - Aratoca</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial;background:#FFF5F7;padding-bottom:180px}
-.header{background:#E75480;color:white;text-align:center;padding:12px;font-weight:bold;font-size:15px}
-.header small{display:block;font-weight:normal;font-size:12px;margin-top:3px;opacity:0.9}
-.toolbar{display:flex;gap:4px;padding:8px;background:white;flex-wrap:wrap}
-.btn{border:none;padding:8px 8px;border-radius:6px;font-weight:bold;font-size:11px;color:white;cursor:pointer}
-.blue{background:#2196F3} .purple{background:#9C27B0} .orange{background:#FF9800} .red{background:#f44336;margin-left:auto}
-.search{display:flex;gap:4px;padding:8px;background:white;align-items:center}
-.search label{font-weight:bold;font-size:14px}
-.search input{flex:1;padding:10px;border:1px solid #ccc;border-radius:6px}
-.add{background:#E91E63;color:white;border:none;padding:10px 12px;border-radius:6px;font-weight:bold} 
-.quit{background:#607D8B;color:white;border:none;padding:10px 8px;border-radius:6px;font-weight:bold}
-.table{width:100%;background:white;border-collapse:collapse;font-size:12px;margin-top:5px}
-.table th{background:#f5f5f5;padding:8px 4px;border-bottom:1px solid #ddd;font-size:11px}
-.table td{padding:10px 4px;text-align:center;border-bottom:1px solid #eee}
-.footer-pos{position:fixed;bottom:0;left:0;width:100%;background:white;border-top:3px solid #E75480;padding:10px 10px 25px 10px;z-index:9999}
-.total-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:14px}
-.total-val{color:#E91E63;font-size:22px;font-weight:bold}
-select,input{padding:6px;border-radius:5px;border:1px solid #ccc}
-.cobrar{background:#4CAF50;color:white;padding:14px;border:none;border-radius:8px;font-weight:bold;width:48%;font-size:15px}
-.apartar{background:#2196F3;color:white;padding:14px;border:none;border-radius:8px;font-weight:bold;width:48%;font-size:15px}
-.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;justify-content:center;align-items:center}
-.modal-content{background:white;padding:20px;border-radius:10px;width:90%;max-width:400px}
+:root{--vino:#7a1230;--vino2:#a01a40;--rosa:#ff0a54;--gris:#f4f4f5}
+*{box-sizing:border-box;font-family:system-ui,Arial}
+body{margin:0;background:var(--gris)}
+.header{background:var(--vino);color:#fff;padding:8px;text-align:center;position:sticky;top:0;z-index:10}
+.topbar{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:#fff;border-bottom:2px solid var(--vino)}
+.btn{border:none;border-radius:8px;padding:9px 12px;font-weight:700;cursor:pointer;color:#fff}
+.btn-blue{background:#0d6efd} .btn-purple{background:#8a2be2} .btn-orange{background:#ff8c00}
+.btn-red{background:#c00} .btn-green{background:#198754} .btn-dark{background:#343a40}
+.btn-base{background:#6f42c1} .btn-prov{background:#20c997;color:#000} .btn-pago{background:#fd7e14}
+.btn-devo{background:#dc3545} .btn-gasto{background:#6c757d}
+.card{background:#fff;border-radius:10px;padding:8px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+input,select{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;margin:4px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#eee;padding:6px} td{padding:6px;border-bottom:1px solid #eee;text-align:center}
+.badge-vencido{background:#dc3545;color:#fff;padding:2px 6px;border-radius:10px;font-size:11px}
+.badge-alerta{background:#ffc107;padding:2px 6px;border-radius:10px;font-size:11px}
+.badge-ok{background:#198754;color:#fff;padding:2px 6px;border-radius:10px;font-size:11px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:99;padding:12px}
+.modal.show{display:flex}
+.modal-box{background:#fff;width:100%;max-width:520px;border-radius:12px;padding:14px;max-height:90vh;overflow:auto}
+.total-bar{position:sticky;bottom:0;background:#fff;border-top:3px solid var(--vino);padding:8px}
 </style>
 </head>
 <body>
-<div class="header">👩 CHACARITA <small id="infoRosa">👩 Rosa | Cliente: <span id="clienteActual">Cliente Mostrador</span> | <span id="statusSync">● Local</span></small></div>
-<div class="toolbar">
-<button class="btn blue" onclick="abrirModal('modalCliente')">🔍 Cliente F6</button>
-<button class="btn purple" onclick="abrirModal('modalEntrada')">📥 Entrada F9</button>
-<button class="btn orange" onclick="abrirModal('modalSalida')">📤 Salida F10</button>
-<button class="btn red" onclick="hacerCierre()">💾 CIERRE F8</button>
+<div class="header">
+<b>CHACARITA V10 JC - ARATOCA</b><br>
+<span id="infoHeader">Rosa | Base: $0 | Local</span>
 </div>
-<div class="search">
-<label>Código:</label> <input id="codigo" placeholder="Escanee o escriba código" type="text">
-<button class="add" onclick="agregar()">AGREGAR</button>
-<button class="quit" onclick="quitar()">✕ QUITAR</button>
+<div class="topbar">
+<button class="btn btn-blue" onclick="abrirCliente()">Cliente F6</button>
+<button class="btn btn-purple" onclick="abrirEntrada()">Entrada F9</button>
+<button class="btn btn-orange" onclick="abrirSalida()">Salida F10</button>
+<button class="btn btn-base" onclick="abrirBase()">BASE</button>
+<button class="btn btn-prov" onclick="abrirProveedores()">Proveedores</button>
+<button class="btn btn-pago" onclick="abrirPagoProv()">Pago Prov</button>
+<button class="btn btn-devo" onclick="abrirDevolucion()">Devol Venc</button>
+<button class="btn btn-gasto" onclick="abrirGasto()">Gasto</button>
+<button class="btn btn-red" style="margin-left:auto" onclick="abrirCierre()">CIERRE F8</button>
 </div>
-<table class="table">
-<tr><th>Nombre</th><th>Código</th><th>Stock</th><th>Precio</th><th>Cant</th><th>Subtotal</th></tr>
-<tbody id="lista"></tbody>
-</table>
+<div class="main">
+<div class="card">
+<div class="grid2">
+<div><b>Codigo:</b><input id="codigoInput" placeholder="Escanea o escribe y Enter" onkeydown="if(event.key==='Enter') agregarProd()"></div>
+<div style="display:flex;gap:6px;align-items:end"><button class="btn btn-purple" style="flex:1" onclick="agregarProd()">AGREGAR</button><button class="btn btn-dark" onclick="quitarUltimo()">X QUITAR</button></div>
+</div>
+<table id="tablaVenta"><thead><tr><th>Nombre</th><th>Codigo</th><th>Stock</th><th>Precio</th><th>Venc</th><th>Cant</th><th>Subtotal</th></tr></thead><tbody></tbody></table>
+</div>
+</div>
+<div class="total-bar">
+<b>TOTAL: <span id="totalTxt" style="color:#ff0a54;font-size:22px">$ 0</span></b>
+Metodo: <select id="metodoPago" style="width:120px"><option>Efectivo</option><option>Transferencia</option><option>Mixto</option></select>
+Efectivo: $<input id="efectivoInput" type="number" style="width:110px" oninput="calcVuelto()"> <span id="vueltoTxt" style="background:#d4edda;padding:4px 8px;border-radius:6px">Vuelto: $0</span>
+<div class="grid2" style="margin-top:8px">
+<button class="btn btn-green" style="padding:14px" onclick="cobrar()">COBRAR F1</button>
+<button class="btn btn-blue" style="padding:14px" onclick="apartar()">APARTAR</button>
+</div>
+<small id="resumenDia">Ing. Joel Cogollo | Ventas hoy: $0 | Rosa | Base: $0 | Deuda Prov: $0</small>
+</div>
 
-<div class="footer-pos">
-<div class="total-line">
-<b>TOTAL: <span class="total-val" id="total">$ 0</span></b>
-Método: <select id="metodo"><option>Efectivo</option><option>Nequi</option><option>Daviplata</option><option>T. Débito</option><option>T. Crédito</option></select>
-Efectivo: $<input id="Efectivo" type="number" style="width:85px" oninput="calcVuelto()">
-<span style="background:#E8F5E9;color:#2E7D32;padding:5px 10px;border-radius:6px;font-weight:bold">Vuelto: $<span id="vuelto">0</span></span>
-</div>
-<div style="display:flex;gap:8px;margin-top:12px">
-<button class="cobrar" onclick="cobrar()">💵 COBRAR F1</button>
-<button class="apartar" onclick="apartar()">📦 APARTAR</button>
-</div>
-<div class="credito">💻 Desarrollado por Ing. Joel Cogollo | <span id="ventasHoy">Ventas hoy: $0</span></div>
-</div>
+<div id="modalBase" class="modal"><div class="modal-box">
+<h3>Base Inicial - Plata para Vueltos</h3>
+<label>Valor Base Hoy:</label><input id="baseInput" type="number" placeholder="Ej 100000">
+<label>Observacion:</label><input id="baseObs" placeholder="Base mañana">
+<button class="btn btn-base" style="width:100%" onclick="guardarBase()">Guardar Base</button>
+<button class="btn btn-dark" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button>
+</div></div>
 
-<!-- MODALES -->
-<div id="modalCliente" class="modal"><div class="modal-content"><h3>Cliente</h3><input id="inputCliente" placeholder="Nombre cliente" style="width:100%;margin:10px 0;padding:10px"><button onclick="guardarCliente()" style="background:#2196F3;color:white;padding:10px;width:100%;border:none;border-radius:6px">Guardar Cliente</button><button onclick="cerrarModal('modalCliente')" style="margin-top:5px;width:100%">Cerrar</button></div></div>
-<div id="modalEntrada" class="modal"><div class="modal-content"><h3>Entrada de Inventario</h3><input id="entradaCodigo" placeholder="Código" style="width:100%;margin:5px 0;padding:10px"><input id="entradaCant" type="number" placeholder="Cantidad a sumar" style="width:100%;margin:5px 0;padding:10px"><button onclick="procesarEntrada()" style="background:#9C27B0;color:white;padding:10px;width:100%;border:none;border-radius:6px">Sumar Stock</button><button onclick="cerrarModal('modalEntrada')" style="margin-top:5px;width:100%">Cerrar</button></div></div>
-<div id="modalSalida" class="modal"><div class="modal-content"><h3>Salida / Merma</h3><input id="salidaCodigo" placeholder="Código" style="width:100%;margin:5px 0;padding:10px"><input id="salidaCant" type="number" placeholder="Cantidad a restar" style="width:100%;margin:5px 0;padding:10px"><input id="salidaMotivo" placeholder="Motivo (daño, vencido)" style="width:100%;margin:5px 0;padding:10px"><button onclick="procesarSalida()" style="background:#FF9800;color:white;padding:10px;width:100%;border:none;border-radius:6px">Restar Stock</button><button onclick="cerrarModal('modalSalida')" style="margin-top:5px;width:100%">Cerrar</button></div></div>
+<div id="modalEntrada" class="modal"><div class="modal-box">
+<h3>Entrada de Mercancia - Inventario Completo</h3>
+<label>Codigo *</label><input id="entCodigo" placeholder="Zapatos-01">
+<label>Nombre Producto *</label><input id="entNombre" placeholder="Zapato escolar">
+<div class="grid2"><div><label>Cantidad a sumar *</label><input id="entCant" type="number"></div><div><label>Stock actual</label><input id="entStockActual" disabled></div></div>
+<div class="grid2"><div><label>Costo Compra</label><input id="entCosto" type="number" placeholder="8000"></div><div><label>Precio Venta</label><input id="entPrecio" type="number" placeholder="12500"></div></div>
+<hr>
+<label>Proveedor *</label><select id="entProveedor"></select>
+<label>NIT Proveedor</label><input id="entNit">
+<label>Celular Proveedor</label><input id="entCel">
+<div class="grid2"><div><label>N Factura / Pedido</label><input id="entFactura" placeholder="FAC-123"></div><div><label>Valor Factura Total</label><input id="entValorFactura" type="number"></div></div>
+<div class="grid2"><div><label>Lote</label><input id="entLote" placeholder="L2025"></div><div><label>Fecha Vencimiento *</label><input id="entVenc" type="date"></div></div>
+<button class="btn btn-purple" style="width:100%;padding:12px" onclick="guardarEntrada()">Sumar Stock + Guardar Todo</button>
+<button class="btn btn-dark" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button>
+</div></div>
+
+<div id="modalProveedores" class="modal"><div class="modal-box">
+<h3>Proveedores - Maestro</h3>
+<label>Nombre Proveedor *</label><input id="provNombre" placeholder="Distribuidora Santander">
+<label>NIT *</label><input id="provNit" placeholder="900123456-7">
+<label>Celular *</label><input id="provCel" placeholder="310...">
+<label>Productos que surte</label><input id="provProductos" placeholder="Zapatos, medias">
+<button class="btn btn-prov" style="width:100%" onclick="guardarProveedor()">Guardar Proveedor</button>
+<hr><h4>Listado</h4><div id="listaProv"></div>
+<button class="btn btn-dark" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button>
+</div></div>
+
+<div id="modalPagoProv" class="modal"><div class="modal-box">
+<h3>Pago a Proveedores - Afecta Cierre</h3>
+<label>Proveedor</label><select id="pagoProvSelect" onchange="cargarFacturasProv()"></select>
+<label>Factura / Valor a Pagar *</label><select id="pagoFacturaSelect"></select>
+<label>Valor a pagar *</label><input id="pagoValor" type="number" placeholder="50000">
+<label>Metodo - Sale de la venta del dia?</label><select id="pagoMetodo"><option value="caja">Si - Sale de Caja del Dia (afecta cierre)</option><option value="externo">No - Plata externa</option></select>
+<label>Observacion</label><input id="pagoObs" placeholder="Pago factura FAC-123">
+<button class="btn btn-pago" style="width:100%" onclick="guardarPagoProv()">Registrar Pago</button>
+<div id="listaPagos" style="margin-top:10px"></div>
+<button class="btn btn-dark" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button>
+</div></div>
+
+<div id="modalDevo" class="modal"><div class="modal-box">
+<h3>Devolucion por Vencimiento</h3>
+<label>Codigo Producto</label><input id="devoCodigo" placeholder="Escribe codigo y Enter" onkeydown="if(event.key==='Enter') buscarDevo()" onchange="buscarDevo()">
+<div id="devoInfo" style="background:#fff3cd;padding:8px;border-radius:8px;margin:6px 0">Info producto...</div>
+<label>Cantidad a Devolver *</label><input id="devoCant" type="number">
+<label>Motivo</label><select id="devoMotivo"><option>Vencido</option><option>Proximo a vencer</option><option>Dañado</option><option>Dev. Cliente</option></select>
+<label>Accion</label><select id="devoAccion"><option value="baja">Dar de baja (botar)</option><option value="devolver_prov">Devolver a Proveedor - Descuenta deuda</option></select>
+<button class="btn btn-devo" style="width:100%" onclick="guardarDevolucion()">Registrar Devolucion</button>
+<div id="listaDevo" style="margin-top:10px"></div>
+<button class="btn btn-dark" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button>
+</div></div>
+
+<div id="modalGasto" class="modal"><div class="modal-box">
+<h3>Gasto / Salida de Dinero</h3>
+<label>Concepto</label><input id="gastoConcepto" placeholder="Almuerzo, luz">
+<label>Valor</label><input id="gastoValor" type="number">
+<button class="btn btn-gasto" style="width:100%" onclick="guardarGasto()">Guardar Gasto</button>
+<button class="btn btn-dark" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button>
+</div></div>
+
+<div id="modalCierre" class="modal"><div class="modal-box">
+<h3>Cierre del Dia - Cuadre Real</h3>
+<div id="cierreDetalle" style="background:#f8f9fa;padding:10px;border-radius:8px;line-height:1.8"></div>
+<button class="btn btn-red" style="width:100%" onclick="hacerCierre()">CERRAR DIA Y GUARDAR</button>
+<button class="btn btn-dark" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button>
+</div></div>
+
+<div id="modalCliente" class="modal"><div class="modal-box"><h3>Cliente</h3><input id="clienteInput" placeholder="Cliente Mostrador"><button class="btn btn-blue" style="width:100%" onclick="guardarCliente()">Guardar</button><button class="btn btn-dark" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
+<div id="modalSalida" class="modal"><div class="modal-box"><h3>Salida Inventario (Merma)</h3><input id="salCodigo" placeholder="Codigo"><input id="salCant" type="number" placeholder="Cantidad a restar"><input id="salMotivo" placeholder="Motivo"><button class="btn btn-orange" style="width:100%" onclick="guardarSalida()">Restar Stock</button><button class="btn btn-dark" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
 
 <script>
-// DOBLE GUARDADO: LOCAL + NUBE
-let DB_PRODUCTOS = JSON.parse(localStorage.getItem('JC_productos') || '{}');
-let DB_VENTAS = JSON.parse(localStorage.getItem('JC_ventas') || '[]');
-let carrito=[], total=0, clienteActual="Cliente Mostrador";
-
-function guardarLocal(){ localStorage.setItem('JC_productos', JSON.stringify(DB_PRODUCTOS)); localStorage.setItem('JC_ventas', JSON.stringify(DB_VENTAS)); actualizarVentasHoy(); }
-function actualizarVentasHoy(){ let hoy = DB_VENTAS.reduce((s,v)=>s+v.total,0); document.getElementById('ventasHoy').innerText='Ventas hoy: $'+hoy.toLocaleString()+' | Rosa'; }
-
-function agregar(){ let cod=document.getElementById('codigo').value.trim(); if(!cod) return;
- let prod = DB_PRODUCTOS[cod];
- if(!prod){ // Si no existe, lo crea (para prueba) - en producción lo jalas de Firebase
-   prod={nombre:'Prod '+cod, codigo:cod, stock:100, precio:12500};
-   DB_PRODUCTOS[cod]=prod;
-   guardarLocal();
-   // AQUÍ VA EL SYNC A NUBE: firebase.firestore().collection('productos').doc(cod).set(prod)
- }
- if(prod.stock<=0){ alert('Sin stock'); return; }
- let enCarrito=carrito.find(p=>p.codigo==cod);
- if(enCarrito){ enCarrito.cant++; } else { carrito.push({...prod, cant:1}); }
- render(); document.getElementById('codigo').value=''; document.getElementById('codigo').focus();
+let productos = JSON.parse(localStorage.getItem('chacarita_v10_prod')||'[]');
+let proveedores = JSON.parse(localStorage.getItem('chacarita_v10_prov')||'[]');
+let pagosProv = JSON.parse(localStorage.getItem('chacarita_v10_pagos')||'[]');
+let devoluciones = JSON.parse(localStorage.getItem('chacarita_v10_devo')||'[]');
+let gastos = JSON.parse(localStorage.getItem('chacarita_v10_gastos')||'[]');
+let ventasDia = JSON.parse(localStorage.getItem('chacarita_v10_ventas')||'0');
+let base = JSON.parse(localStorage.getItem('chacarita_v10_base')||'{"valor":0,"obs":""}');
+let carrito=[]; let cliente="Cliente Mostrador";
+function save(){localStorage.setItem('chacarita_v10_prod',JSON.stringify(productos));localStorage.setItem('chacarita_v10_prov',JSON.stringify(proveedores));localStorage.setItem('chacarita_v10_pagos',JSON.stringify(pagosProv));localStorage.setItem('chacarita_v10_devo',JSON.stringify(devoluciones));localStorage.setItem('chacarita_v10_gastos',JSON.stringify(gastos));localStorage.setItem('chacarita_v10_ventas',JSON.stringify(ventasDia));localStorage.setItem('chacarita_v10_base',JSON.stringify(base)); actualizarHeader(); renderProvSelect();}
+function actualizarHeader(){
+let deuda = proveedores.reduce((s,p)=>{let totalFact = productos.filter(x=>x.proveedor===p.nombre).reduce((a,b)=>a+(b.valorFactura||0),0); let pagado = pagosProv.filter(x=>x.proveedor===p.nombre).reduce((a,b)=>a+b.valor,0); return s+Math.max(0,totalFact-pagado);},0);
+document.getElementById('infoHeader').innerText=`Rosa | Base: $${base.valor.toLocaleString()} | Deuda Prov: $${deuda.toLocaleString()} | Local`;
+document.getElementById('resumenDia').innerText=`Ing. Joel Cogollo | Ventas hoy: $${ventasDia.toLocaleString()} | Rosa | Base: $${base.valor.toLocaleString()} | Deuda Prov: $${deuda.toLocaleString()} | Dev: ${devoluciones.length}`;
 }
-function quitar(){carrito.pop(); render();}
-function render(){ let html='', t=0; carrito.forEach(p=>{let sub=p.precio*p.cant; t+=sub; html+=`<tr><td>${p.nombre}</td><td>${p.codigo}</td><td>${p.stock}</td><td>$${p.precio.toLocaleString()}</td><td>${p.cant}</td><td>$${sub.toLocaleString()}</td></tr>`}); document.getElementById('lista').innerHTML=html; total=t; document.getElementById('total').innerText='$ '+t.toLocaleString(); calcVuelto();}
-function calcVuelto(){let paga=parseInt(document.getElementById('paga').value||0); document.getElementById('vuelto').innerText=(paga-total>0?paga-total:0).toLocaleString();}
-function cobrar(){ if(total==0){alert('Carrito vacío');return}
- let venta={fecha: new Date().toISOString(), total: total, metodo: document.getElementById('metodo').value, cliente: clienteActual, items: carrito};
- DB_VENTAS.push(venta);
- // Descontar stock
- carrito.forEach(item=>{ if(DB_PRODUCTOS[item.codigo]) DB_PRODUCTOS[item.codigo].stock -= item.cant; });
- guardarLocal();
- // AQUÍ VA SYNC NUBE: firebase.firestore().collection('ventas').add(venta)
- alert('Venta $'+total.toLocaleString()+' cobrada por '+venta.metodo+' - Guardado LOCAL + NUBE');
- carrito=[]; render(); document.getElementById('paga').value='';
+function abrirBase(){document.getElementById('baseInput').value=base.valor;document.getElementById('baseObs').value=base.obs;document.getElementById('modalBase').classList.add('show')}
+function guardarBase(){base={valor:parseInt(document.getElementById('baseInput').value)||0,obs:document.getElementById('baseObs').value};save();cerrarModales();alert('Base guardada: $'+base.valor)}
+function renderProvSelect(){
+let sel=document.getElementById('entProveedor'); let sel2=document.getElementById('pagoProvSelect');
+if(!sel)return;
+let opts = '<option value="">-- Seleccione --</option>'+proveedores.map(p=>`<option value="${p.nombre}">${p.nombre} - ${p.nit}</option>`).join('')+'<option value="__nuevo__">+ Nuevo Proveedor...</option>';
+sel.innerHTML=opts; sel2.innerHTML='<option value="">-- Seleccione --</option>'+proveedores.map(p=>`<option value="${p.nombre}">${p.nombre}</option>`).join('');
+document.getElementById('entProveedor').onchange=function(){if(this.value==='__nuevo__'){abrirProveedores(); return;} let pr=proveedores.find(x=>x.nombre===this.value); if(pr){document.getElementById('entNit').value=pr.nit; document.getElementById('entCel').value=pr.celular;}}
+let lista=document.getElementById('listaProv'); if(lista) lista.innerHTML=proveedores.map(p=>`<div style="border:1px solid #ddd;padding:6px;border-radius:6px;margin:4px 0"><b>${p.nombre}</b> NIT:${p.nit} Cel:${p.celular}<br><small>${p.productos}</small></div>`).join('')||'Sin proveedores';
 }
-function apartar(){ alert('Apartado guardado para '+clienteActual); }
-
-// FUNCIONES DE LOS BOTONES DE ARRIBA
-function abrirModal(id){ document.getElementById(id).style.display='flex'; }
-function cerrarModal(id){ document.getElementById(id).style.display='none'; }
-function guardarCliente(){ clienteActual=document.getElementById('inputCliente').value||'Cliente Mostrador'; document.getElementById('clienteActual').innerText=clienteActual; cerrarModal('modalCliente'); }
-function procesarEntrada(){ let cod=document.getElementById('entradaCodigo').value; let cant=parseInt(document.getElementById('entradaCant').value||0); if(!DB_PRODUCTOS[cod]){ alert('Producto no existe, primero agrégalo con AGREGAR'); return; } DB_PRODUCTOS[cod].stock+=cant; guardarLocal(); alert('Stock sumado. Nuevo stock: '+DB_PRODUCTOS[cod].stock); cerrarModal('modalEntrada'); }
-function procesarSalida(){ let cod=document.getElementById('salidaCodigo').value; let cant=parseInt(document.getElementById('salidaCant').value||0); if(!DB_PRODUCTOS[cod]) return; DB_PRODUCTOS[cod].stock-=cant; guardarLocal(); alert('Salida registrada: '+document.getElementById('salidaMotivo').value); cerrarModal('modalSalida'); }
-function hacerCierre(){ let resumen={}; DB_VENTAS.forEach(v=>{ resumen[v.metodo]=(resumen[v.metodo]||0)+v.total }); let texto='CIERRE DESGLOSADO\n\n'; for(let m in resumen){ texto+= m+': $'+resumen[m].toLocaleString()+'\n'; } texto+='\nTOTAL: $'+DB_VENTAS.reduce((s,v)=>s+v.total,0).toLocaleString(); alert(texto); }
-
-document.getElementById('codigo').addEventListener('keypress', e=>{ if(e.key==='Enter') agregar(); });
-actualizarVentasHoy();
-// TECLAS F
-document.addEventListener('keydown', e=>{ if(e.key==='F6') abrirModal('modalCliente'); if(e.key==='F9') abrirModal('modalEntrada'); if(e.key==='F10') abrirModal('modalSalida'); if(e.key==='F8') hacerCierre(); if(e.key==='F1') cobrar(); });
-</script>
-</body>
-</html>
+function abrirProveedores(){document.getElementById('modalProveedores').classList.add('show');renderProvSelect()}
+function guardarProveedor(){
+let p={nombre:document.getElementById('provNombre').value.trim(),nit:document.getElementById('provNit').value.trim(),celular:document.getElementById('provCel').value.trim(),productos:document.getElementById('provProductos').value.trim(),obs:''};
+if(!p.nombre||!p.nit) return alert('Nombre y NIT obligatorios'); 
+proveedores=proveedores.filter(x=>x.nombre!==p.nombre); proveedores.push(p); save(); alert('Proveedor guardado'); document.getElementById('provNombre').value='';document.getElementById('provNit').value='';document.getElementById('provCel').value='';document.getElementById('provProductos').value='';
+}
+function abrirEntrada(){
+let cod=document.getElementById('codigoInput').value.trim();
+document.getElementById('entCodigo').value=cod;
+let prod=productos.find(x=>x.codigo.toLowerCase()===cod.toLowerCase());
+document.getElementById('entStockActual').value= prod?prod.stock:0;
+document.getElementById('entNombre').value= prod?prod.nombre:'';
+document.getElementById('entPrecio').value= prod?prod.precio:'';
+document.getElementById('entCosto').value= prod?prod.costo||'';
+document.getElementById('entVenc').value= prod?prod.vencimiento||'';
+document.getElementById('modalEntrada').classList.add('show');renderProvSelect();
+}
+function guardarEntrada(){
+let codigo=document.getElementById('entCodigo').value.trim(); let nombre=document.getElementById('entNombre').value.trim(); let cant=parseInt(document.getElementById('entCant').value)||0;
+let costo=parseInt(document.getElementById('entCosto').value)||0; let precio=parseInt(document.getElementById('entPrecio').value)||0;
+let prov=document.getElementById('entProveedor').value; let nit=document.getElementById('entNit').value; let cel=document.getElementById('entCel').value;
+let factura=document.getElementById('entFactura').value; let valorFactura=parseInt(document.getElementById('entValorFactura').value)||0;
+let lote=document.getElementById('entLote').value; let venc=document.getElementById('entVenc').value;
+if(!codigo||!nombre||!cant) return alert('Codigo, Nombre y Cantidad obligatorios');
+if(!venc) return alert('Fecha vencimiento obligatoria');
+let idx=productos.findIndex(x=>x.codigo.toLowerCase()===codigo.toLowerCase());
+if(idx>=0){productos[idx].stock+=cant; productos[idx].costo=costo||productos[idx].costo; productos[idx].precio=precio||productos[idx].precio; productos[idx].vencimiento=venc; productos[idx].lote=lote; productos[idx].proveedor=prov; productos[idx].valorFactura=(productos[idx].valorFactura||0)+valorFactura; productos[idx].factura=factura;}
+else{productos.push({codigo,nombre,stock:cant,costo,precio:precio||costo*1.4,vencimiento:venc,lote,proveedor:prov,nit,celular:cel,factura,valorFactura});}
+if(prov && !proveedores.find(x=>x.nombre===prov)){proveedores.push({nombre:prov,nit,celular:cel,productos:nombre,obs:'Auto creado'});}
+save(); cerrarModales(); alert(`Entrada OK: ${cant} x ${nombre} | Vence: ${venc}`); document.getElementById('codigoInput').value='';
+}
+function abrirPagoProv(){document.getElementById('modalPagoProv').classList.add('show');renderProvSelect(); renderPagos()}
+function cargarFacturasProv(){
+let prov=document.getElementById('pagoProvSelect').value;
+let facturas=productos.filter(p=>p.proveedor===prov && p.factura).map(p=>p.factura);
+let uniq=[...new Set(facturas)];
+document.getElementById('pagoFacturaSelect').innerHTML=uniq.map(f=>`<option value="${f}">${f}</option>`).join('')+'<option value="general">Pago General</option>';
+}
+function guardarPagoProv(){
+let prov=document.getElementById('pagoProvSelect').value; let factura=document.getElementById('pagoFacturaSelect').value; let valor=parseInt(document.getElementById('pagoValor').value)||0;
+let metodo=document.getElementById('pagoMetodo').value; let obs=document.getElementById('pagoObs').value;
+if(!prov||!valor) return alert('Proveedor y valor obligatorios');
+pagosProv.push({id:Date.now(),proveedor:prov,factura,valor,metodo,obs,fecha:new Date().toLocaleString()});
+save(); renderPagos(); alert(`Pago registrado: $${valor} a ${prov} | ${metodo==='caja'?'Afecta cierre':''}`);
+}
+function renderPagos(){let div=document.getElementById('listaPagos'); if(!div) return; div.innerHTML=pagosProv.slice(-10).reverse().map(p=>`<div style="border:1px solid #eee;padding:4px"><b>${p.proveedor}</b> $${p.valor} - ${p.factura} - ${p.metodo} - ${p.fecha}</div>`).join('')}
+function abrirDevolucion(){document.getElementById('modalDevo').classList.add('show'); document.getElementById('listaDevo').innerHTML=devoluciones.slice(-10).reverse().map(d=>`<div style="border:1px solid #f5c6cb;padding:4px"><b>${d.codigo}</b> ${d.cant} - ${d.motivo} - ${d.accion} - $${d.valor} - ${d.fecha}</div>`).join('')}
+function buscarDevo(){
+let cod=document.getElementById('devoCodigo').value.trim(); let p=productos.find(x=>x.codigo.toLowerCase()===cod.toLowerCase());
+let info=document.getElementById('devoInfo');
+if(!p){info.innerHTML='No existe'; return;}
+let hoy=new Date(); let venc=new Date(p.vencimiento); let diff=Math.ceil((venc-hoy)/(1000*60*60*24));
+let badge= diff<0?'<span class=badge-vencido>VENCIDO hace '+Math.abs(diff)+' dias</span>': diff<=15?'<span class=badge-alerta>VENCE en '+diff+' dias</span>':'<span class=badge-ok>OK '+diff+' dias</span>';
+info.innerHTML=`<b>${p.nombre}</b> Stock:${p.stock} ${badge}<br>Vence: ${p.vencimiento} Lote:${p.lote||'-'} Prov:${p.proveedor||'-'} Costo:$${p.costo}`;
+}
+function guardarDevolucion(){
+let codigo=document.getElementById('devoCodigo').value.trim(); let cant=parseInt(document.getElementById('devoCant').value)||0; let motivo=document.getElementById('devoMotivo').value; let accion=document.getElementById('devoAccion').value;
+let p=productos.find(x=>x.codigo.toLowerCase()===codigo.toLowerCase());
+if(!p||!cant) return alert('Producto y cantidad');
+if(p.stock<cant) return alert('Stock insuficiente: '+p.stock);
+p.stock-=cant;
+let valor=cant*(p.costo||0);
+devoluciones.push({id:Date.now(),codigo,cant,motivo,accion,valor,proveedor:p.proveedor||'',fecha:new Date().to
