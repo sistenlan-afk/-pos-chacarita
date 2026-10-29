@@ -1,0 +1,8 @@
+{
+  "name": "POS CHACARITA V8.1 - Ing Joel Cogollo",
+  "short_name": "Chacarita",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#E75480",
+  "background_color": "#FFF5F7"
+}
