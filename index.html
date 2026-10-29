@@ -1,24 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POS CHACARITA V8.1 - Ing Joel Cogollo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>CHACARITA V8.1 - Rosa</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#E75480">
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:Arial;background:#FFF5F7}
+.header{background:#E75480;color:white;text-align:center;padding:10px;font-weight:bold}
+.header small{display:block;font-weight:normal;font-size:12px;margin-top:3px}
+.toolbar{display:flex;gap:5px;padding:8px;background:white;flex-wrap:wrap}
+.btn{border:none;padding:8px 10px;border-radius:6px;font-weight:bold;font-size:12px;color:white}
+.blue{background:#2196F3} .purple{background:#9C27B0} .orange{background:#FF9800} .red{margin-left:auto;background:#f44336}
+.search{display:flex;gap:5px;padding:8px;background:white}
+.search input{flex:1;padding:10px;border:1px solid #ccc;border-radius:6px}
+.add{background:#E91E63;color:white} .quit{background:#607D8B;color:white}
+.table{width:100%;background:white;border-collapse:collapse;font-size:12px}
+.table th{background:#f5f5f5;padding:8px;border-bottom:1px solid #ddd}
+.table td{padding:10px 5px;text-align:center;border-bottom:1px solid #eee}
+.footer-pos{position:fixed;bottom:0;width:100%;background:white;border-top:2px solid #E75480;padding:10px}
+.total-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.total-line b{font-size:18px} .total-val{color:#E91E63;font-size:22px}
+select,input{padding:6px;border-radius:5px;border:1px solid #ccc}
+.cobrar{background:#4CAF50;color:white;padding:12px 18px;border:none;border-radius:8px;font-weight:bold;width:48%}
+.apartar{background:#2196F3;color:white;padding:12px 18px;border:none;border-radius:8px;font-weight:bold;width:48%}
+.ventas-hoy{color:#E91E63;font-size:12px;text-align:right;margin-top:8px;font-weight:bold}
+</style>
 </head>
-<body style="font-family:Arial;background:#FFF5F7;margin:0">
-<div style="background:#E75480;color:white;padding:15px;text-align:center;font-weight:bold">💄 POS V8.1 CHACARITA</div>
-<div style="background:white;margin:15px;border-radius:12px;padding:15px">
-<h2>TOTAL VENDIDO HOY $520.000</h2>
-<p>Efectivo $200.000 → Entregar</p>
-<p>Nequi $100.000 | Daviplata $50.000</p>
-<p>T.Débito $100.000 | T.Crédito $50.000</p>
-<p>Combinado (Efec $20k + Nequi $30k)</p>
-<hr>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-<div style="background:#C8E6C9;padding:10px;border-radius:8px;text-align:center"><b>EFECTIVO A ENTREGAR<br>$220.000</b></div>
-<div style="background:#BBDEFB;padding:10px;border-radius:8px;text-align:center"><b>DIGITAL NO SE ENTREGA<br>$300.000</b></div>
+<body>
+<div class="header">👩 CHACARITA - V8.1 CIERRE DESGLOSADO <small>👩 Rosa | Cliente: Cliente Mostrador</small></div>
+<div class="toolbar">
+<button class="btn blue">🔍 Cliente F6</button>
+<button class="btn purple">📥 Entrada F9</button>
+<button class="btn orange">📤 Salida F10</button>
+<button class="btn red">💾 CIERRE F8</button>
 </div>
+<div class="search">
+Código: <input id="codigo" placeholder="Escanee o escriba código" type="text">
+<button class="btn add" onclick="agregar()">AGREGAR</button>
+<button class="btn quit" onclick="quitar()">✕ QUITAR</button>
 </div>
-<div style="text-align:center;padding:10px;color:#6c757d;font-size:12px;position:fixed;bottom:0;width:100%;background:white">💻 Desarrollado por Ing. Joel Cogollo - Software Chacarita V8.1</div>
+<table class="table">
+<tr><th>Nombre</th><th>Código</th><th>Stock</th><th>Precio</th><th>Cant</th><th>Subtotal</th></tr>
+<tbody id="lista"></tbody>
+</table>
+
+<div style="height:130px"></div>
+<div class="footer-pos">
+<div class="total-line">
+<b>TOTAL: <span class="total-val" id="total">$ 0</span></b>
+Método: <select id="metodo" onchange="cambioMetodo()">
+<option>Efectivo</option><option>Nequi</option><option>Daviplata</option><option>T. Débito</option><option>T. Crédito</option><option>Combinado</option>
+</select>
+Paga: $<input id="paga" type="number" style="width:80px" oninput="calcVuelto()">
+<span style="background:#E8F5E9;color:#2E7D32;padding:4px 8px;border-radius:5px">Vuelto: $<span id="vuelto">0</span></span>
+</div>
+<div style="display:flex;gap:8px;margin-top:10px">
+<button class="cobrar" onclick="cobrar()">💵 COBRAR F1</button>
+<button class="apartar" onclick="alert('Apartado guardado')">📦 APARTAR</button>
+</div>
+<div class="ventas-hoy">Ventas hoy: $ <span id="ventasHoy">12.500</span> | Rosa</div>
+<div style="text-align:center;font-size:10px;color:#999;margin-top:5px">💻 Desarrollado por Ing. Joel Cogollo - Software Chacarita V8.1</div>
+</div>
+
+<script>
+let carrito=[], total=0, ventasHoy=12500;
+function agregar(){
+ let cod=document.getElementById('codigo').value; if(!cod) return;
+ let prod={nombre:'Labial Rosa '+cod, codigo:cod, stock:10, precio:12500, cant:1};
+ carrito.push(prod); render(); document.getElementById('codigo').value='';
+}
+function quitar(){carrito.pop(); render();}
+function render(){
+ let html='', t=0; carrito.forEach(p=>{let sub=p.precio*p.cant; t+=sub; html+=`<tr><td>${p.nombre}</td><td>${p.codigo}</td><td>${p.stock}</td><td>$${p.precio}</td><td>${p.cant}</td><td>$${sub}</td></tr>`});
+ document.getElementById('lista').innerHTML=html; total=t; document.getElementById('total').innerText='$ '+t.toLocaleString(); calcVuelto();
+}
+function calcVuelto(){let paga=parseInt(document.getElementById('paga').value||0); document.getElementById('vuelto').innerText=(paga-total>0?paga-total:0);}
+function cambioMetodo(){}
+function cobrar(){
+ if(total==0){alert('Carrito vacío');return}
+ ventasHoy+=total; document.getElementById('ventasHoy').innerText=ventasHoy.toLocaleString();
+ alert('Venta $'+total+' por '+document.getElementById('metodo').value+' - Cobrada. Vuelto $'+document.getElementById('vuelto').innerText);
+ carrito=[]; render(); document.getElementById('paga').value='';
+}
+</script>
 </body>
 </html>
