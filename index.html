@@ -3,65 +3,111 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POS La Chacarita - JOEL Admin</title>
+<title>POS TODO COMPLETO V14.2</title>
 <style>
-:root{--verde:#1a5c2a;--verde2:#2e8b47;--beige:#fdf8ef;--amarillo:#ffcc00}
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif}
-body{background:var(--beige);color:#222}
-.login-wrap{height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--verde) 0%, #0f2e18 100%)}
-.login-card{background:white;padding:35px 30px;border-radius:18px;width:90%;max-width:380px;box-shadow:0 20px 40px rgba(0,0,0,.3);text-align:center}
-.login-card img{width:90px;height:90px;border-radius:50%;object-fit:cover;margin-bottom:15px;border:3px solid var(--verde)}
-.login-card h1{color:var(--verde)}
-.input-group{margin:12px 0;text-align:left}
-.input-group label{font-size:13px;font-weight:600}
-.input-group input{width:100%;padding:13px;margin-top:5px;border:2px solid #ddd;border-radius:10px;font-size:16px}
-.btn{width:100%;padding:13px;background:var(--verde);color:white;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-top:10px}
-.pos-wrap{display:none;min-height:100vh}
-.header{background:var(--verde);color:white;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
-.products{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;padding:15px;padding-bottom:220px}
-.prod{background:white;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer}
-.prod .name{font-weight:700;margin:5px 0;font-size:14px}
-.prod .price{color:var(--verde2);font-weight:700}
-.cart{position:fixed;bottom:0;left:0;right:0;background:white;border-top:3px solid var(--verde);padding:15px;max-height:50vh;overflow:auto}
-.total{font-size:20px;font-weight:800;color:var(--verde);margin:10px 0;display:flex;justify-content:space-between}
-.btn-pagar{background:var(--amarillo);color:#000}
+:root{--green:#0f5d2e;--yellow:#ffb800;--bg:#f5f1e8}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
+body{background:var(--bg)}
+.top{background:var(--green);color:white;padding:10px 15px;display:flex;justify-content:space-between}
+.btn{border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:bold}
+.btn-yellow{background:var(--yellow)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;padding:15px}
+.card{background:white;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 6px #0001;cursor:pointer}
+.cart{background:white;margin:10px;border-radius:12px;padding:15px}
+.login{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;z-index:99}
+.login-box{background:white;padding:25px;border-radius:15px;width:90%;max-width:350px}
+.login-box input{width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:8px}
 </style>
 </head>
 <body>
-<div id="loginView" class="login-wrap">
-  <div class="login-card">
-    <img src="logo.jpeg" onerror="this.src='https://cdn-icons-png.flaticon.com/512/263/263115.png'">
-    <h1>La Chacarita</h1>
-    <p style="margin-bottom:15px">POS - Ing. JOEL<br>Backend: pos-chacarita-3</p>
-    <div class="input-group"><label>Usuario</label><input id="user" value="JOEL"></div>
-    <div class="input-group"><label>PIN</label><input id="pin" type="password" value="1234"></div>
-    <button class="btn" onclick="login()">INGRESAR →</button>
-    <div id="err" style="color:red;font-size:13px;margin-top:10px;display:none"></div>
-  </div>
+<div id="loginScreen" class="login">
+<div class="login-box">
+<h2>La Chacarita POS</h2><p>TODO COMPLETO V14.2</p>
+<input id="user" placeholder="Usuario - ej: JOEL">
+<input id="pin" type="password" placeholder="PIN">
+<button class="btn btn-yellow" style="width:100%" onclick="login()">ENTRAR</button>
 </div>
-<div id="posView" class="pos-wrap">
-  <div class="header"><div><b>La Chacarita POS</b><br><small id="userLabel"></small></div><button onclick="logout()" style="background:white;color:#1a5c2a;border:none;padding:8px 12px;border-radius:8px;font-weight:700">Salir</button></div>
-  <div class="products" id="products"></div>
-  <div class="cart">
-    <h3>🛒 Carrito <span id="cartCount">0</span></h3>
-    <div id="cartList"><em style="color:#999">Toca productos para agregar</em></div>
-    <div class="total"><span>Total:</span><span id="totalTxt">$0</span></div>
-    <button class="btn btn-pagar" onclick="cobrar()">💰 COBRAR Y GUARDAR VENTA</button>
-    <div id="ventaMsg" style="margin-top:8px;color:#2e8b47;font-weight:700"></div>
-  </div>
+</div>
+<div class="top">
+<div><b>La Chacarita POS</b><br><span id="userInfo">V14.2 - Conectado a Render</span></div>
+<button class="btn" style="background:white" onclick="location.reload()">Salir</button>
+</div>
+<div style="display:flex;gap:8px;padding:10px 15px;background:white;flex-wrap:wrap">
+<input id="cliente" placeholder="Cliente F6 - Mostrador" style="flex:1;padding:8px">
+<input id="base" type="number" placeholder="Base $0" style="width:90px;padding:8px">
+<select id="categoria" style="padding:8px"><option>General</option><option>Licores</option><option>Bebidas</option><option>Comidas</option></select>
+<button class="btn btn-yellow" onclick="document.getElementById('addModal').style.display='flex'">+ Producto F2</button>
+<button class="btn" style="background:#e8f5e9" onclick="verVentas()">Ventas F3</button>
+</div>
+<div id="productosGrid" class="grid">Cargando productos desde Render...</div>
+<div class="cart">
+<div>🛒 Carrito <span id="cartCount">0</span></div>
+<div id="cartItems"></div>
+<div style="display:flex;justify-content:space-between;font-size:20px;font-weight:bold;color:#0f5d2e;padding:10px 0"><span>Total:</span><span id="totalTxt">$0</span></div>
+<button class="btn btn-yellow" style="width:100%;font-size:18px;padding:14px" onclick="cobrar()">💰 COBRAR F1 - GUARDAR EN RENDER</button>
+<div id="cobradoMsg" style="color:green;font-weight:bold;margin-top:8px"></div>
+</div>
+<div id="addModal" class="login" style="display:none">
+<div class="login-box">
+<h3>Nuevo Producto - Se guarda en Render</h3>
+<input id="pNombre" placeholder="Nombre ej: Arroz">
+<input id="pPrecio" type="number" placeholder="Precio ej: 3500">
+<input id="pStock" type="number" placeholder="Stock ej: 50">
+<button class="btn btn-yellow" style="width:100%" onclick="guardarProducto()">GUARDAR</button>
+<button class="btn" style="width:100%;margin-top:5px" onclick="document.getElementById('addModal').style.display='none'">Cancelar</button>
+</div>
 </div>
 <script>
-const API='https://pos-chacarita-3.onrender.com';
-const productos=[{id:1,nombre:'Pola Aguila',precio:3500,emoji:'🍺'},{id:2,nombre:'Guaro Antioqueño',precio:4000,emoji:'🥃'},{id:3,nombre:'Poker Lata',precio:3800,emoji:'🍻'},{id:4,nombre:'Gaseosa 350ml',precio:2500,emoji:'🥤'},{id:5,nombre:'Agua Botella',precio:2000,emoji:'💧'},{id:6,nombre:'Cigarrillo x1',precio:800,emoji:'🚬'},{id:7,nombre:'Chicles',precio:500,emoji:'🍬'},{id:8,nombre:'Papas Margarita',precio:3000,emoji:'🍟'},{id:9,nombre:'Mani',precio:2000,emoji:'🥜'},{id:10,nombre:'Arepa',precio:2500,emoji:'🫓'},{id:11,nombre:'Empanada',precio:2500,emoji:'🥟'},{id:12,nombre:'Tinto',precio:1200,emoji:'☕'}];
-let carrito=[],usuarioActual=null;
-function renderProducts(){document.getElementById('products').innerHTML=productos.map(p=>`<div class="prod" onclick="add(${p.id})"><div style="font-size:32px">${p.emoji}</div><div class="name">${p.nombre}</div><div class="price">$${p.precio.toLocaleString()}</div></div>`).join('');}
-function add(id){const p=productos.find(x=>x.id===id);const ex=carrito.find(x=>x.id===id);if(ex)ex.cant++;else carrito.push({...p,cant:1});renderCart();}
-function renderCart(){const total=carrito.reduce((s,i)=>s+i.precio*i.cant,0);document.getElementById('cartCount').innerText=carrito.reduce((s,i)=>s+i.cant,0);document.getElementById('totalTxt').innerText='$'+total.toLocaleString();const list=document.getElementById('cartList');if(!carrito.length){list.innerHTML='<em style="color:#999">Toca productos</em>';return;}list.innerHTML=carrito.map((it,idx)=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #eee"><span>${it.nombre} x${it.cant}</span><span>$${(it.precio*it.cant).toLocaleString()} <b onclick="carrito.splice(${idx},1);renderCart()" style="color:#c00;cursor:pointer">✕</b></span></div>`).join('');}
-async function login(){const nombre=document.getElementById('user').value.trim();const pin=document.getElementById('pin').value.trim();const err=document.getElementById('err');err.style.display='none';try{const res=await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,pin})});const data=await res.json();if(!res.ok)throw new Error(data.error||'Error');usuarioActual=data.usuario;localStorage.setItem('chacarita_user',JSON.stringify(usuarioActual));showPOS();}catch(e){err.innerText=e.message;err.style.display='block';}}
-function showPOS(){document.getElementById('loginView').style.display='none';document.getElementById('posView').style.display='block';document.getElementById('userLabel').innerText=usuarioActual.nombre+' • '+usuarioActual.rol;renderProducts();renderCart();}
-function logout(){localStorage.removeItem('chacarita_user');location.reload();}
-async function cobrar(){if(!carrito.length)return alert('Carrito vacio');const total=carrito.reduce((s,i)=>s+i.precio*i.cant,0);const msg=document.getElementById('ventaMsg');msg.innerText='Guardando en Postgres...';try{const res=await fetch(API+'/api/ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos:carrito,total,usuario:usuarioActual.nombre})});const d=await res.json();msg.innerText='✅ Venta #'+d.id+' guardada $'+total.toLocaleString();carrito=[];renderCart();setTimeout(()=>msg.innerText='',4000);}catch(e){msg.innerText='✅ Cobrada $'+total.toLocaleString();}}
-const saved=localStorage.getItem('chacarita_user');if(saved){try{usuarioActual=JSON.parse(saved);showPOS();}catch{}}
+const API='';
+let productos=[],carrito=[],usuarioActual=null;
+async function login(){
+ const nombre=document.getElementById('user').value.trim();
+ const pin=document.getElementById('pin').value.trim();
+ const r=await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,pin})});
+ const d=await r.json();
+ if(!r.ok) return alert(d.error);
+ usuarioActual=d.usuario;
+ document.getElementById('loginScreen').style.display='none';
+ document.getElementById('userInfo').innerText=d.usuario.nombre+' • '+d.usuario.rol;
+ cargarProductos();
+}
+async function cargarProductos(){
+ const grid=document.getElementById('productosGrid');
+ const r=await fetch(API+'/api/productos'); productos=await r.json();
+ if(productos.length===0){grid.innerHTML='No hay productos. Dale + Producto';return}
+ grid.innerHTML=productos.map(p=>`<div class="card" onclick="addCarrito(${p.id})"><div style="font-size:30px">📦</div><b>${p.nombre}</b><div style="color:#0f5d2e;font-weight:bold">$${Number(p.precio).toLocaleString()}</div><div style="font-size:11px">Stock ${p.stock}</div></div>`).join('');
+}
+function addCarrito(id){
+ const p=productos.find(x=>x.id===id);
+ const ex=carrito.find(x=>x.id===id);
+ if(ex) ex.cant++; else carrito.push({...p,cant:1});
+ renderCarrito();
+}
+function renderCarrito(){
+ document.getElementById('cartCount').innerText=carrito.length;
+ let total=0;
+ document.getElementById('cartItems').innerHTML=carrito.map((c,i)=>{total+=c.precio*c.cant; return `<div style="display:flex;justify-content:space-between;border-bottom:1px dashed #ddd;padding:5px"><span>${c.nombre} x${c.cant}</span><span>$${(c.precio*c.cant).toLocaleString()} <b onclick="carrito.splice(${i},1);renderCarrito()" style="color:red">X</b></span></div>`}).join('');
+ document.getElementById('totalTxt').innerText='$'+total.toLocaleString();
+}
+async function guardarProducto(){
+ const nombre=document.getElementById('pNombre').value;
+ const precio=document.getElementById('pPrecio').value;
+ const stock=document.getElementById('pStock').value||0;
+ const categoria=document.getElementById('categoria').value;
+ const r=await fetch(API+'/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,stock,categoria})});
+ if(r.ok){document.getElementById('addModal').style.display='none';cargarProductos();alert('Guardado en Render ✅')}
+}
+async function cobrar(){
+ if(carrito.length===0) return alert('Vacío');
+ const total=carrito.reduce((s,c)=>s+c.precio*c.cant,0);
+ const cliente=document.getElementById('cliente').value||'Mostrador';
+ const r=await fetch(API+'/api/ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos:{carrito,cliente},total,usuario:usuarioActual.nombre})});
+ if(r.ok){document.getElementById('cobradoMsg').innerText='✅ Cobrada $'+total.toLocaleString();carrito=[];renderCarrito();}
+}
+async function verVentas(){
+ const r=await fetch(API+'/api/ventas'); const v=await r.json();
+ alert(v.slice(0,10).map(x=>`#${x.id} $${x.total} ${x.usuario}`).join('\n'));
+}
 </script>
 </body>
 </html>
