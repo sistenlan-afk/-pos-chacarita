@@ -8,15 +8,22 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false });
 
-async function init(){
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS usuarios (id SERIAL PRIMARY KEY, nombre TEXT UNIQUE NOT NULL, pin TEXT NOT NULL, rol TEXT DEFAULT 'vendedor', activo BOOLEAN DEFAULT true, created_at TIMESTAMP DEFAULT NOW());
-    CREATE TABLE IF NOT EXISTS productos (id SERIAL PRIMARY KEY, nombre TEXT NOT NULL, codigo TEXT, categoria TEXT DEFAULT 'General', precio NUMERIC DEFAULT 0, stock NUMERIC DEFAULT 0, created_at TIMESTAMP DEFAULT NOW());
-    CREATE TABLE IF NOT EXISTS clientes (id SERIAL PRIMARY KEY, nombre TEXT NOT NULL, documento TEXT, telefono TEXT, direccion TEXT, created_at TIMESTAMP DEFAULT NOW());
-    CREATE TABLE IF NOT EXISTS proveedores (id SERIAL PRIMARY KEY, nombre TEXT NOT NULL, documento TEXT, telefono TEXT, direccion TEXT, created_at TIMESTAMP DEFAULT NOW());
-    CREATE TABLE IF NOT EXISTS ventas (id SERIAL PRIMARY KEY, fecha TIMESTAMP DEFAULT NOW(), datos JSONB, total NUMERIC DEFAULT 0, usuario TEXT, cliente TEXT, tipo TEXT DEFAULT 'contado', pagos JSONB, created_at TIMESTAMP DEFAULT NOW());
-    CREATE TABLE IF NOT EXISTS cierres (id SERIAL PRIMARY KEY, fecha DATE NOT NULL UNIQUE, usuario TEXT, base_inicial NUMERIC DEFAULT 0, efectivo_esperado NUMERIC DEFAULT 0, efectivo_contado NUMERIC DEFAULT 0, total_ventas NUMERIC DEFAULT 0, pagos JSONB, observaciones TEXT, created_at TIMESTAMP DEFAULT NOW());
-  `);
+  // FIX MIGRACION TABLAS VIEJAS - Render
+  try{ await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS pin TEXT`); }catch(e){}
+  try{ await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol TEXT DEFAULT 'vendedor'`); }catch(e){}
+  try{ await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT true`); }catch(e){}
+  try{ await pool.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS pagos JSONB`); }catch(e){}
+  try{ await pool.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente TEXT`); }catch(e){}
+  try{ await pool.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'contado'`); }catch(e){}
+  try{ await pool.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS codigo TEXT`); }catch(e){}
+  // Si la tabla usuarios vieja no tenia pin, la creamos con datos
+  try{
+    const check = await pool.query(`SELECT * FROM usuarios LIMIT 1`);
+    if(check.rows.length>0 && !check.rows[0].pin){
+      await pool.query(`UPDATE usuarios SET pin='1234' WHERE LOWER(nombre)=LOWER('JOEL')`);
+      await pool.query(`UPDATE usuarios SET pin='0000' WHERE LOWER(nombre)=LOWER('CARLOS')`);
+    }
+  }catch(e){}
   const u = await pool.query("SELECT * FROM usuarios WHERE LOWER(nombre)=LOWER('JOEL')");
   if(u.rows.length===0){
     await pool.query("INSERT INTO usuarios(nombre,pin,rol) VALUES('JOEL','1234','admin') ON CONFLICT DO NOTHING");
