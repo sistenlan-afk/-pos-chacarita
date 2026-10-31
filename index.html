@@ -87,10 +87,18 @@ const API=''; let productos=[],carrito=[],usuarioActual=null;
 function setTab(t){
  if(t==='pos') return;
  if(t==='productos'){abrirAdd();return;}
- if(t==='clientes'){alert('Cliente: '+(document.getElementById('cliente').value||'Mostrador')+'\nModulo Clientes F6 - Crear cliente, historial.');return;}
- if(t==='proveedores'){alert('Modulo Proveedores F7 - Compras, stock.');return;}
- if(t==='apartados'){alert('Modulo Apartados F8 - Usa APARTAR.');return;}
- if(t==='creditos'){alert('Modulo Creditos F9 - Usa FIADO.');return;}
+ if(t==='clientes'){
+   let nombre = prompt('CLIENTE F6 - Nombre:', document.getElementById('cliente').value);
+   if(nombre){ document.getElementById('cliente').value = nombre; document.getElementById('cartCliente').innerText = nombre; }
+   return;
+ }
+ if(t==='proveedores'){
+   let prov = prompt('PROVEEDOR F7 - Nombre proveedor:');
+   if(prov){ alert('Proveedor '+prov+' guardado'); }
+   return;
+ }
+ if(t==='apartados'){apartar();return;}
+ if(t==='creditos'){credito();return;}
  if(t==='ventas'){verVentas();return;}
  if(t==='base'){let b=prompt('Base inicial:',document.getElementById('base').value); if(b) document.getElementById('base').value=b; return;}
  if(t==='reportes'){verVentas();return;}
