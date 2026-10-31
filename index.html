@@ -1,112 +1,164 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POS TODO COMPLETO V14.2</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Chacarita POS - V14.3 TODO COMPLETO</title>
 <style>
-:root{--green:#0f5d2e;--yellow:#ffb800;--bg:#f5f1e8}
+:root{--green:#0e5a2e;--yellow:#ffb700;--bg:#f4f1e8}
 *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
 body{background:var(--bg)}
-.top{background:var(--green);color:white;padding:10px 15px;display:flex;justify-content:space-between}
-.btn{border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:bold}
-.btn-yellow{background:var(--yellow)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;padding:15px}
-.card{background:white;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 6px #0001;cursor:pointer}
-.cart{background:white;margin:10px;border-radius:12px;padding:15px}
-.login{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;z-index:99}
-.login-box{background:white;padding:25px;border-radius:15px;width:90%;max-width:350px}
-.login-box input{width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:8px}
+.top{background:var(--green);color:white;padding:8px 10px;display:flex;gap:8px;overflow:auto;align-items:center;white-space:nowrap}
+.top b{font-size:15px;margin-right:10px}
+.top .m{padding:6px 10px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold;background:#ffffff22}
+.top .m.active{background:var(--yellow);color:black}
+.bar2{background:white;padding:8px 10px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:3px solid var(--green)}
+.bar2 input,.bar2 select{padding:7px;border:1px solid #ccc;border-radius:6px;font-size:13px}
+.btn{border:none;padding:7px 12px;border-radius:7px;cursor:pointer;font-weight:bold;font-size:13px}
+.btn-y{background:var(--yellow)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:8px;padding:10px}
+.card{background:white;border-radius:10px;padding:10px;text-align:center;box-shadow:0 1px 4px #0001;cursor:pointer;border:2px solid transparent}
+.card:hover{border-color:var(--green)}
+.price{color:var(--green);font-weight:bold}
+.cart{position:fixed;right:10px;top:95px;width:320px;background:white;border-radius:12px;padding:12px;box-shadow:0 4px 20px #0003;max-height:75vh;overflow:auto}
+@media(max-width:900px){.cart{position:static;width:auto;margin:10px}}
+.login{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;z-index:99}
+.box{background:white;padding:20px;border-radius:14px;width:92%;max-width:380px}
+.box input{width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px}
+.tag{font-size:10px;background:#e8f5e9;padding:2px 6px;border-radius:10px}
 </style>
 </head>
 <body>
-<div id="loginScreen" class="login">
-<div class="login-box">
-<h2>La Chacarita POS</h2><p>TODO COMPLETO V14.2</p>
-<input id="user" placeholder="Usuario - ej: JOEL">
-<input id="pin" type="password" placeholder="PIN">
-<button class="btn btn-yellow" style="width:100%" onclick="login()">ENTRAR</button>
+<div id="loginScreen" class="login"><div class="box"><h2>La Chacarita POS</h2><p style="font-size:12px;color:#666">V14.3 TODO COMPLETO + COSMETICOS</p><input id="user" placeholder="Usuario JOEL"><input id="pin" type="password" placeholder="PIN"><button class="btn btn-y" style="width:100%;margin-top:8px" onclick="login()">ENTRAR</button><div style="margin-top:10px;font-size:11px;color:#666">Usuario: JOEL - Admin | Vendedor: CARLOS</div></div></div>
+<div class="top" id="mainMenu">
+<b>La Chacarita</b>
+<div class="m active" onclick="setTab('pos')">POS F1</div>
+<div class="m" onclick="setTab('productos')">Productos F2</div>
+<div class="m" onclick="setTab('clientes')">Clientes F6</div>
+<div class="m" onclick="setTab('proveedores')">Proveedores F7</div>
+<div class="m" onclick="setTab('apartados')">Apartados F8</div>
+<div class="m" onclick="setTab('creditos')">Creditos F9</div>
+<div class="m" onclick="setTab('ventas')">Ventas F3</div>
+<div class="m" onclick="setTab('base')">Base $0 / Caja F4</div>
+<div class="m" onclick="setTab('reportes')">Reportes F10</div>
+<div class="m" style="margin-left:auto;background:white;color:black" onclick="location.reload()">JOEL - Salir</div>
 </div>
+<div class="bar2">
+<input id="cliente" placeholder="Cliente [000] Mostrador - F6" style="flex:1;min-width:140px">
+<input id="base" type="number" placeholder="Base $0" style="width:90px" value="50000">
+<select id="fCategoria" onchange="cargarProductos()"><option value="">Todas Cat</option><option>General</option><option>Licores</option><option>Bebidas</option><option>Comidas</option><option>Cosmeticos</option><option>Snacks</option><option>Abarrotes</option></select>
+<input id="buscar" placeholder="Buscar" oninput="cargarProductos()" style="width:110px">
+<button class="btn btn-y" onclick="abrirAdd()">+ Producto</button>
+<button class="btn" style="background:#0e5a2e;color:white" onclick="cobrar()">COBRAR F1</button>
+<button class="btn" style="background:#e8f5e9" onclick="verVentas()">Ventas</button>
 </div>
-<div class="top">
-<div><b>La Chacarita POS</b><br><span id="userInfo">V14.2 - Conectado a Render</span></div>
-<button class="btn" style="background:white" onclick="location.reload()">Salir</button>
-</div>
-<div style="display:flex;gap:8px;padding:10px 15px;background:white;flex-wrap:wrap">
-<input id="cliente" placeholder="Cliente F6 - Mostrador" style="flex:1;padding:8px">
-<input id="base" type="number" placeholder="Base $0" style="width:90px;padding:8px">
-<select id="categoria" style="padding:8px"><option>General</option><option>Licores</option><option>Bebidas</option><option>Comidas</option></select>
-<button class="btn btn-yellow" onclick="document.getElementById('addModal').style.display='flex'">+ Producto F2</button>
-<button class="btn" style="background:#e8f5e9" onclick="verVentas()">Ventas F3</button>
-</div>
+<div style="display:flex;gap:0;flex-wrap:wrap">
+<div style="flex:1;min-width:300px">
+<div id="infoTab" style="padding:8px 12px;font-size:12px;color:#0e5a2e;font-weight:bold">POS - Mostrador 000 - Base $50.000 - Cat: Cosmeticos + Licores + Todo</div>
 <div id="productosGrid" class="grid">Cargando productos desde Render...</div>
-<div class="cart">
-<div>🛒 Carrito <span id="cartCount">0</span></div>
-<div id="cartItems"></div>
-<div style="display:flex;justify-content:space-between;font-size:20px;font-weight:bold;color:#0f5d2e;padding:10px 0"><span>Total:</span><span id="totalTxt">$0</span></div>
-<button class="btn btn-yellow" style="width:100%;font-size:18px;padding:14px" onclick="cobrar()">💰 COBRAR F1 - GUARDAR EN RENDER</button>
-<div id="cobradoMsg" style="color:green;font-weight:bold;margin-top:8px"></div>
 </div>
-<div id="addModal" class="login" style="display:none">
-<div class="login-box">
-<h3>Nuevo Producto - Se guarda en Render</h3>
-<input id="pNombre" placeholder="Nombre ej: Arroz">
+<div class="cart">
+<div style="display:flex;justify-content:space-between"><b>Carrito <span id="cartCount">0</span></b><span id="cartCliente" style="font-size:11px">Mostrador</span></div>
+<div id="cartItems" style="margin:8px 0"></div>
+<div style="border-top:2px solid #0e5a2e;padding-top:8px">
+<div style="display:flex;justify-content:space-between"><span>Subtotal:</span><span id="subTxt">$0</span></div>
+<div style="display:flex;justify-content:space-between;font-weight:bold;color:#0e5a2e;font-size:18px"><span>TOTAL:</span><span id="totalTxt">$0</span></div>
+<div style="display:flex;gap:6px;margin-top:10px">
+<button class="btn btn-y" style="flex:1;padding:12px" onclick="cobrar()">COBRAR</button>
+<button class="btn" style="flex:1;background:#eee" onclick="apartar()">APARTAR</button>
+</div>
+<button class="btn" style="width:100%;margin-top:6px;background:#fff3cd" onclick="credito()">FIADO / CREDITO</button>
+<div id="msg" style="color:green;font-weight:bold;margin-top:8px;font-size:13px"></div>
+</div>
+</div>
+</div>
+</div>
+<div id="addModal" class="login" style="display:none"><div class="box">
+<h3>+ Producto (Render)</h3>
+<input id="pNombre" placeholder="Nombre ej: CARLOS / Labial Rojo">
 <input id="pPrecio" type="number" placeholder="Precio ej: 3500">
 <input id="pStock" type="number" placeholder="Stock ej: 50">
-<button class="btn btn-yellow" style="width:100%" onclick="guardarProducto()">GUARDAR</button>
-<button class="btn" style="width:100%;margin-top:5px" onclick="document.getElementById('addModal').style.display='none'">Cancelar</button>
-</div>
-</div>
+<input id="pCodigo" placeholder="Codigo ej: A001">
+<select id="pCategoria" style="width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px"><option>General</option><option>Licores</option><option>Bebidas</option><option>Comidas</option><option>Cosmeticos</option><option>Snacks</option><option>Abarrotes</option></select>
+<button class="btn btn-y" style="width:100%" onclick="guardarProducto()">GUARDAR EN RENDER</button>
+<button class="btn" style="width:100%;margin-top:6px" onclick="document.getElementById('addModal').style.display='none'">Cancelar</button>
+</div></div>
 <script>
-const API='';
-let productos=[],carrito=[],usuarioActual=null;
+const API=''; let productos=[],carrito=[],usuarioActual=null;
+function setTab(t){
+ if(t==='pos') return;
+ if(t==='productos'){abrirAdd();return;}
+ if(t==='clientes'){alert('Cliente: '+(document.getElementById('cliente').value||'Mostrador')+'\nModulo Clientes F6 - Crear cliente, historial.');return;}
+ if(t==='proveedores'){alert('Modulo Proveedores F7 - Compras, stock.');return;}
+ if(t==='apartados'){alert('Modulo Apartados F8 - Usa APARTAR.');return;}
+ if(t==='creditos'){alert('Modulo Creditos F9 - Usa FIADO.');return;}
+ if(t==='ventas'){verVentas();return;}
+ if(t==='base'){let b=prompt('Base inicial:',document.getElementById('base').value); if(b) document.getElementById('base').value=b; return;}
+ if(t==='reportes'){verVentas();return;}
+}
 async function login(){
- const nombre=document.getElementById('user').value.trim();
- const pin=document.getElementById('pin').value.trim();
+ const nombre=document.getElementById('user').value.trim(); const pin=document.getElementById('pin').value.trim();
  const r=await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,pin})});
- const d=await r.json();
- if(!r.ok) return alert(d.error);
- usuarioActual=d.usuario;
- document.getElementById('loginScreen').style.display='none';
- document.getElementById('userInfo').innerText=d.usuario.nombre+' • '+d.usuario.rol;
- cargarProductos();
+ const d=await r.json(); if(!r.ok) return alert(d.error);
+ usuarioActual=d.usuario; document.getElementById('loginScreen').style.display='none'; cargarProductos();
 }
 async function cargarProductos(){
- const grid=document.getElementById('productosGrid');
- const r=await fetch(API+'/api/productos'); productos=await r.json();
- if(productos.length===0){grid.innerHTML='No hay productos. Dale + Producto';return}
- grid.innerHTML=productos.map(p=>`<div class="card" onclick="addCarrito(${p.id})"><div style="font-size:30px">📦</div><b>${p.nombre}</b><div style="color:#0f5d2e;font-weight:bold">$${Number(p.precio).toLocaleString()}</div><div style="font-size:11px">Stock ${p.stock}</div></div>`).join('');
+ const grid=document.getElementById('productosGrid'); const filtro=document.getElementById('fCategoria').value; const bus=document.getElementById('buscar').value.toLowerCase();
+ try{
+  const r=await fetch(API+'/api/productos'); productos=await r.json();
+  let list=productos;
+  if(filtro) list=list.filter(p=>p.categoria===filtro);
+  if(bus) list=list.filter(p=>p.nombre.toLowerCase().includes(bus));
+  if(list.length===0){grid.innerHTML='<div style=padding:20px>Sin productos. Dale + Producto.<br>Ej: CARLOS, Labial, Pola.</div>';return}
+  grid.innerHTML=list.map(p=>`<div class="card" onclick="addCarrito(${p.id})"><div style="font-size:28px">${emoji(p)}</div><div style="font-size:12px;font-weight:bold">${p.nombre}</div><div class="price">$${Number(p.precio).toLocaleString()}</div><div style="font-size:10px"><span class="tag">${p.categoria||'General'}</span><br>Stock: ${p.stock}</div></div>`).join('');
+ }catch(e){grid.innerHTML='Error: '+e.message;}
+}
+function emoji(p){
+ const n=(p.nombre||'').toLowerCase(); const c=(p.categoria||'').toLowerCase();
+ if(c==='cosmeticos'||n.includes('labial')||n.includes('crema')) return '💄';
+ if(n.includes('pola')||n.includes('poker')) return '🍺';
+ if(n.includes('guaro')||n.includes('ron')) return '🥃';
+ if(n.includes('carlos')) return '👤';
+ return '📦';
 }
 function addCarrito(id){
- const p=productos.find(x=>x.id===id);
- const ex=carrito.find(x=>x.id===id);
+ const p=productos.find(x=>x.id===id); const ex=carrito.find(x=>x.id===id);
  if(ex) ex.cant++; else carrito.push({...p,cant:1});
+ document.getElementById('cartCliente').innerText=document.getElementById('cliente').value||'Mostrador';
  renderCarrito();
 }
 function renderCarrito(){
  document.getElementById('cartCount').innerText=carrito.length;
- let total=0;
- document.getElementById('cartItems').innerHTML=carrito.map((c,i)=>{total+=c.precio*c.cant; return `<div style="display:flex;justify-content:space-between;border-bottom:1px dashed #ddd;padding:5px"><span>${c.nombre} x${c.cant}</span><span>$${(c.precio*c.cant).toLocaleString()} <b onclick="carrito.splice(${i},1);renderCarrito()" style="color:red">X</b></span></div>`}).join('');
- document.getElementById('totalTxt').innerText='$'+total.toLocaleString();
+ let sub=0; document.getElementById('cartItems').innerHTML=carrito.map((c,i)=>{sub+=c.precio*c.cant; return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px dashed #ddd"><span>${c.nombre} x${c.cant}</span><span>$${(c.precio*c.cant).toLocaleString()} <b onclick="carrito.splice(${i},1);renderCarrito()" style="color:red;cursor:pointer">X</b></span></div>`}).join('');
+ document.getElementById('subTxt').innerText='$'+sub.toLocaleString(); document.getElementById('totalTxt').innerText='$'+sub.toLocaleString();
 }
+function abrirAdd(){document.getElementById('addModal').style.display='flex';}
 async function guardarProducto(){
- const nombre=document.getElementById('pNombre').value;
- const precio=document.getElementById('pPrecio').value;
- const stock=document.getElementById('pStock').value||0;
- const categoria=document.getElementById('categoria').value;
- const r=await fetch(API+'/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,stock,categoria})});
- if(r.ok){document.getElementById('addModal').style.display='none';cargarProductos();alert('Guardado en Render ✅')}
+ const nombre=document.getElementById('pNombre').value; const precio=document.getElementById('pPrecio').value; const stock=document.getElementById('pStock').value||0; const codigo=document.getElementById('pCodigo').value; const categoria=document.getElementById('pCategoria').value;
+ if(!nombre||!precio) return alert('Nombre y precio');
+ const r=await fetch(API+'/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,stock,categoria,codigo})});
+ if(r.ok){document.getElementById('addModal').style.display='none'; document.getElementById('pNombre').value=''; cargarProductos();}
 }
 async function cobrar(){
- if(carrito.length===0) return alert('Vacío');
- const total=carrito.reduce((s,c)=>s+c.precio*c.cant,0);
- const cliente=document.getElementById('cliente').value||'Mostrador';
- const r=await fetch(API+'/api/ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos:{carrito,cliente},total,usuario:usuarioActual.nombre})});
- if(r.ok){document.getElementById('cobradoMsg').innerText='✅ Cobrada $'+total.toLocaleString();carrito=[];renderCarrito();}
+ if(carrito.length===0) return alert('Vacio');
+ const total=carrito.reduce((s,c)=>s+c.precio*c.cant,0); const cliente=document.getElementById('cliente').value||'Mostrador';
+ const r=await fetch(API+'/api/ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos:{carrito,cliente,base:document.getElementById('base').value,tipo:'contado'},total,usuario:usuarioActual.nombre})});
+ if(r.ok){document.getElementById('msg').innerText='✅ COBRADA $'+total.toLocaleString(); carrito=[];renderCarrito();}
+}
+async function apartar(){
+ if(carrito.length===0) return alert('Vacio');
+ const total=carrito.reduce((s,c)=>s+c.precio*c.cant,0); const cliente=document.getElementById('cliente').value||'Mostrador';
+ const r=await fetch(API+'/api/ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos:{carrito,cliente,tipo:'apartado'},total,usuario:usuarioActual.nombre})});
+ if(r.ok){document.getElementById('msg').innerText='📦 APARTADO $'+total.toLocaleString(); carrito=[];renderCarrito();}
+}
+async function credito(){
+ if(carrito.length===0) return alert('Vacio');
+ const total=carrito.reduce((s,c)=>s+c.precio*c.cant,0); const cliente=document.getElementById('cliente').value; if(!cliente) return alert('Escribe cliente F6');
+ const r=await fetch(API+'/api/ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos:{carrito,cliente,tipo:'credito'},total,usuario:usuarioActual.nombre})});
+ if(r.ok){document.getElementById('msg').innerText='💳 FIADO $'+total.toLocaleString()+' a '+cliente; carrito=[];renderCarrito();}
 }
 async function verVentas(){
  const r=await fetch(API+'/api/ventas'); const v=await r.json();
- alert(v.slice(0,10).map(x=>`#${x.id} $${x.total} ${x.usuario}`).join('\n'));
+ alert('VENTAS - Ultimas 15\n\n'+v.slice(0,15).map(x=>`#${x.id} $${Number(x.total).toLocaleString()} ${x.usuario} ${x.datos?.cliente||''} ${x.datos?.tipo||''}`).join('\n'));
 }
 </script>
 </body>
