@@ -29,11 +29,21 @@ async function initDB() {
       fecha TIMESTAMP DEFAULT NOW(),
       usuario VARCHAR(100)
     );
+    CREATE TABLE IF NOT EXISTS productos (
+      id SERIAL PRIMARY KEY,
+      nombre VARCHAR(100) NOT NULL,
+      precio NUMERIC NOT NULL,
+      stock NUMERIC DEFAULT 0,
+      categoria VARCHAR(50) DEFAULT 'General',
+      codigo VARCHAR(50),
+      creado TIMESTAMP DEFAULT NOW()
+    );
   `);
-  console.log("Tablas listas");
+  console.log("Tablas listas: usuarios, ventas, productos");
 }
 initDB();
 
+// USUARIOS
 app.post('/api/usuarios', async (req, res) => {
   const { nombre, pin, rol } = req.body;
   const hash = await bcrypt.hash(pin, 10);
@@ -58,6 +68,27 @@ app.get('/api/usuarios', async (req, res) => {
   res.json(result.rows);
 });
 
+// PRODUCTOS - ESTO TE FALTABA
+app.get('/api/productos', async (req, res) => {
+  const result = await pool.query('SELECT * FROM productos ORDER BY id DESC');
+  res.json(result.rows);
+});
+
+app.post('/api/productos', async (req, res) => {
+  const { nombre, precio, stock, categoria, codigo } = req.body;
+  const result = await pool.query(
+    'INSERT INTO productos (nombre, precio, stock, categoria, codigo) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [nombre, precio, stock || 0, categoria || 'General', codigo || '']
+  );
+  res.json(result.rows[0]);
+});
+
+app.delete('/api/productos/:id', async (req, res) => {
+  await pool.query('DELETE FROM productos WHERE id = $1', [req.params.id]);
+  res.json({ ok: true });
+});
+
+// VENTAS
 app.post('/api/ventas', async (req, res) => {
   const { datos, total, usuario } = req.body;
   const result = await pool.query('INSERT INTO ventas (datos, total, usuario) VALUES ($1, $2, $3) RETURNING id', [JSON.stringify(datos), total, usuario]);
@@ -72,4 +103,4 @@ app.get('/api/ventas', async (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Servidor POS La Chacarita en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Servidor POS TODO COMPLETO en puerto ${PORT}`));
