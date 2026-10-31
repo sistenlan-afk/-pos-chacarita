@@ -1,173 +1,62 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>La Chacarita POS - V14.3 TODO COMPLETO</title>
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>La Chacarita | Punto de venta</title>
 <style>
-:root{--green:#0e5a2e;--yellow:#ffb700;--bg:#f4f1e8}
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
-body{background:var(--bg)}
-.top{background:var(--green);color:white;padding:8px 10px;display:flex;gap:8px;overflow:auto;align-items:center;white-space:nowrap}
-.top b{font-size:15px;margin-right:10px}
-.top .m{padding:6px 10px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold;background:#ffffff22}
-.top .m.active{background:var(--yellow);color:black}
-.bar2{background:white;padding:8px 10px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:3px solid var(--green)}
-.bar2 input,.bar2 select{padding:7px;border:1px solid #ccc;border-radius:6px;font-size:13px}
-.btn{border:none;padding:7px 12px;border-radius:7px;cursor:pointer;font-weight:bold;font-size:13px}
-.btn-y{background:var(--yellow)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:8px;padding:10px}
-.card{background:white;border-radius:10px;padding:10px;text-align:center;box-shadow:0 1px 4px #0001;cursor:pointer;border:2px solid transparent}
-.card:hover{border-color:var(--green)}
-.price{color:var(--green);font-weight:bold}
-.cart{position:fixed;right:10px;top:95px;width:320px;background:white;border-radius:12px;padding:12px;box-shadow:0 4px 20px #0003;max-height:75vh;overflow:auto}
-@media(max-width:900px){.cart{position:static;width:auto;margin:10px}}
-.login{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;z-index:99}
-.box{background:white;padding:20px;border-radius:14px;width:92%;max-width:380px}
-.box input{width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px}
-.tag{font-size:10px;background:#e8f5e9;padding:2px 6px;border-radius:10px}
-</style>
-</head>
-<body>
-<div id="loginScreen" class="login"><div class="box"><h2>La Chacarita POS</h2><p style="font-size:12px;color:#666">V14.3 TODO COMPLETO + COSMETICOS</p><input id="user" placeholder="Usuario JOEL"><input id="pin" type="password" placeholder="PIN"><button class="btn btn-y" style="width:100%;margin-top:8px" onclick="login()">ENTRAR</button><div style="margin-top:10px;font-size:11px;color:#666">Usuario: JOEL - Admin | Vendedor: CARLOS</div></div></div>
-<div class="top" id="mainMenu">
-<b>La Chacarita</b>
-<div class="m active" onclick="setTab('pos')">POS F1</div>
-<div class="m" onclick="setTab('productos')">Productos F2</div>
-<div class="m" onclick="setTab('clientes')">Clientes F6</div>
-<div class="m" onclick="setTab('proveedores')">Proveedores F7</div>
-<div class="m" onclick="setTab('apartados')">Apartados F8</div>
-<div class="m" onclick="setTab('creditos')">Creditos F9</div>
-<div class="m" onclick="setTab('ventas')">Ventas F3</div>
-<div class="m" onclick="setTab('base')">Base $0 / Caja F4</div>
-<div class="m" onclick="setTab('reportes')">Reportes F10</div>
-<div class="m" style="margin-left:auto;background:white;color:black" onclick="location.reload()">JOEL - Salir</div>
-</div>
-<div class="bar2">
-<input id="cliente" placeholder="Cliente [000] Mostrador - F6" style="flex:1;min-width:140px">
-<input id="base" type="number" placeholder="Base $0" style="width:90px" value="50000">
-<select id="fCategoria" onchange="cargarProductos()"><option value="">Todas Cat</option><option>General</option><option>Licores</option><option>Bebidas</option><option>Comidas</option><option>Cosmeticos</option><option>Snacks</option><option>Abarrotes</option></select>
-<input id="buscar" placeholder="Buscar" oninput="cargarProductos()" style="width:110px">
-<button class="btn btn-y" onclick="abrirAdd()">+ Producto</button>
-<button class="btn" style="background:#0e5a2e;color:white" onclick="cobrar()">COBRAR F1</button>
-<button class="btn" style="background:#e8f5e9" onclick="verVentas()">Ventas</button>
-</div>
-<div style="display:flex;gap:0;flex-wrap:wrap">
-<div style="flex:1;min-width:300px">
-<div id="infoTab" style="padding:8px 12px;font-size:12px;color:#0e5a2e;font-weight:bold">POS - Mostrador 000 - Base $50.000 - Cat: Cosmeticos + Licores + Todo</div>
-<div id="productosGrid" class="grid">Cargando productos desde Render...</div>
-</div>
-<div class="cart">
-<div style="display:flex;justify-content:space-between"><b>Carrito <span id="cartCount">0</span></b><span id="cartCliente" style="font-size:11px">Mostrador</span></div>
-<div id="cartItems" style="margin:8px 0"></div>
-<div style="border-top:2px solid #0e5a2e;padding-top:8px">
-<div style="display:flex;justify-content:space-between"><span>Subtotal:</span><span id="subTxt">$0</span></div>
-<div style="display:flex;justify-content:space-between;font-weight:bold;color:#0e5a2e;font-size:18px"><span>TOTAL:</span><span id="totalTxt">$0</span></div>
-<div style="display:flex;gap:6px;margin-top:10px">
-<button class="btn btn-y" style="flex:1;padding:12px" onclick="cobrar()">COBRAR</button>
-<button class="btn" style="flex:1;background:#eee" onclick="apartar()">APARTAR</button>
-</div>
-<button class="btn" style="width:100%;margin-top:6px;background:#fff3cd" onclick="credito()">FIADO / CREDITO</button>
-<div id="msg" style="color:green;font-weight:bold;margin-top:8px;font-size:13px"></div>
-</div>
-</div>
-</div>
-</div>
-<div id="addModal" class="login" style="display:none"><div class="box">
-<h3>+ Producto (Render)</h3>
-<input id="pNombre" placeholder="Nombre ej: CARLOS / Labial Rojo">
-<input id="pPrecio" type="number" placeholder="Precio ej: 3500">
-<input id="pStock" type="number" placeholder="Stock ej: 50">
-<input id="pCodigo" placeholder="Codigo ej: A001">
-<select id="pCategoria" style="width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px"><option>General</option><option>Licores</option><option>Bebidas</option><option>Comidas</option><option>Cosmeticos</option><option>Snacks</option><option>Abarrotes</option></select>
-<button class="btn btn-y" style="width:100%" onclick="guardarProducto()">GUARDAR EN RENDER</button>
-<button class="btn" style="width:100%;margin-top:6px" onclick="document.getElementById('addModal').style.display='none'">Cancelar</button>
-</div></div>
+:root{--green:#14532d;--green2:#166534;--lime:#eab308;--bg:#f3f6f4;--ink:#17231b;--muted:#647067;--line:#e2e8e3;--red:#b91c1c;--blue:#1d4ed8}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px system-ui,Segoe UI,Arial}.hidden{display:none!important}button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:9px;padding:10px 13px;font-weight:700}.primary{background:var(--green);color:white}.accent{background:var(--lime);color:#201900}.soft{background:#edf3ee;color:var(--green)}.danger{background:#fee2e2;color:var(--red)}.top{background:linear-gradient(110deg,#103d25,#166534);color:white;padding:15px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}.brand{font-size:19px;font-weight:900;letter-spacing:.3px;margin-right:auto}.brand small{display:block;font-size:10px;font-weight:500;opacity:.75;letter-spacing:1.4px}.user{font-size:12px;opacity:.9}.nav{display:flex;gap:6px;flex-wrap:wrap;background:#fff;padding:9px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}.nav button{background:transparent;color:#425148}.nav button.active,.nav button:hover{background:#e8f3eb;color:var(--green)}main{max-width:1450px;margin:18px auto;padding:0 16px}.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:14px}.toolbar input,.toolbar select,.field input,.field select,.field textarea{border:1px solid #ccd7ce;border-radius:8px;padding:10px;background:white;min-width:0}.toolbar input{flex:1;min-width:160px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px}.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 3px 12px #102d1a08}.panel h2{margin:0 0 12px;font-size:17px}.muted{color:var(--muted)}.products{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px}.product{border:1px solid var(--line);border-radius:12px;padding:13px;background:white;text-align:left;min-height:118px}.product:hover{border-color:var(--green);box-shadow:0 4px 14px #14532d14}.product strong{display:block;margin:7px 0}.price{color:var(--green);font-size:16px;font-weight:900}.stock{font-size:11px;color:var(--muted)}.cartline{display:grid;grid-template-columns:1fr auto;gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}.cartline small{display:block;color:var(--muted)}.qty{display:flex;align-items:center;gap:5px}.qty button{padding:4px 8px;background:#edf3ee}.totalrow{display:flex;justify-content:space-between;margin:8px 0}.grand{font-size:23px;font-weight:900;color:var(--green);border-top:1px solid var(--line);padding-top:12px}.cart-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.cart-actions button:first-child{grid-column:1/-1;padding:14px}.section{display:none}.section.active{display:block}.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;background:white}th,td{text-align:left;padding:11px;border-bottom:1px solid var(--line);white-space:nowrap}th{background:#f2f6f3;color:#435348;font-size:12px}.modal{position:fixed;inset:0;background:#07150dcc;z-index:20;display:flex;align-items:center;justify-content:center;padding:15px}.dialog{background:white;border-radius:16px;padding:20px;width:min(650px,100%);max-height:92vh;overflow:auto;box-shadow:0 20px 60px #0004}.dialog h2{margin:0 0 14px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:12px;font-weight:700;color:#4b5b50}.payrow{display:grid;grid-template-columns:1fr 150px;gap:9px;align-items:center;margin:9px 0}.payrow input{width:100%;padding:10px;border:1px solid #ccd7ce;border-radius:8px}.summary{background:#f1f6f2;padding:12px;border-radius:10px;margin:12px 0}.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:15px}.notice{padding:11px;border-radius:9px;background:#fff7d6;color:#725400;margin:10px 0;font-size:12px}.login{position:fixed;inset:0;z-index:30;background:#0c1d13;display:grid;place-items:center}.login .dialog{max-width:380px}.login input{width:100%;padding:12px;margin:6px 0;border:1px solid var(--line);border-radius:8px}.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}.kpi{background:white;border:1px solid var(--line);border-radius:12px;padding:14px}.kpi span{display:block;color:var(--muted);font-size:12px}.kpi b{font-size:21px;color:var(--green)}.empty{padding:30px;text-align:center;color:var(--muted)}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.cartpanel{order:-1}.top{padding:12px}.nav{position:static}}@media(max-width:520px){main{padding:0 9px}.panel{padding:12px}.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.payrow{grid-template-columns:1fr 120px}}
+@media print{body *{visibility:hidden!important}#invoicePrint,#invoicePrint *{visibility:visible!important}#invoicePrint{position:absolute;left:0;top:0;width:100%;padding:18px;color:#000;font:12px Arial}.no-print{display:none!important}}
+</style></head><body>
+<div id="loginScreen" class="login"><div class="dialog"><h2>🛒 La Chacarita POS</h2><p class="muted">Ingreso al punto de venta</p><input id="user" placeholder="Usuario"><input id="pin" type="password" placeholder="PIN"><button class="primary" style="width:100%" onclick="login()">Ingresar</button><p id="loginError" class="muted"></p></div></div>
+<header class="top"><div class="brand">LA CHACARITA <small>SISTEMA DE PUNTO DE VENTA</small></div><div class="user" id="userLabel">Sin sesión</div><button class="soft" onclick="logout()">Salir</button></header>
+<nav class="nav"><button class="active" data-tab="pos" onclick="showTab('pos',this)">🧾 Caja / POS</button><button data-tab="productos" onclick="showTab('productos',this)">📦 Productos</button><button data-tab="clientes" onclick="showTab('clientes',this)">👥 Clientes</button><button data-tab="proveedores" onclick="showTab('proveedores',this)">🚚 Proveedores</button><button data-tab="apartados" onclick="showTab('apartados',this)">📌 Apartados</button><button data-tab="creditos" onclick="showTab('creditos',this)">💳 Créditos</button><button data-tab="ventas" onclick="showTab('ventas',this)">📑 Ventas</button><button data-tab="cierre" onclick="showTab('cierre',this)">🔒 Cierre de caja</button><button data-tab="reportes" onclick="showTab('reportes',this)">📊 Reportes</button></nav>
+<main>
+<section id="tab-pos" class="section active"><div class="toolbar"><input id="buscar" placeholder="Buscar producto por nombre o código…" oninput="renderProducts()"><select id="categoria" onchange="renderProducts()"><option value="">Todas las categorías</option><option>General</option><option>Licores</option><option>Bebidas</option><option>Comidas</option><option>Cosmeticos</option><option>Snacks</option><option>Abarrotes</option></select><button class="accent" onclick="openProduct()">＋ Nuevo producto</button></div><div class="layout"><div class="panel"><h2>Productos disponibles</h2><div id="products" class="products"><div class="empty">Cargando productos…</div></div></div><aside class="panel cartpanel"><h2>Venta actual</h2><div class="field"><label>Cliente</label><input id="cliente" placeholder="Mostrador" value="Mostrador"></div><div id="cartItems" class="empty">Agregue productos a la venta</div><div class="totalrow"><span>Subtotal</span><b id="subtotal">$0</b></div><div class="totalrow grand"><span>TOTAL</span><span id="total">$0</span></div><div class="cart-actions"><button class="primary" onclick="openPayment()">COBRAR / FINALIZAR</button><button class="soft" onclick="saveSpecial('apartado')">Apartar</button><button class="soft" onclick="saveSpecial('credito')">Registrar fiado</button><button class="danger" onclick="clearCart()">Vaciar venta</button></div><p id="posMsg" class="muted"></p></aside></div></section>
+<section id="tab-productos" class="section"><div class="panel"><div class="toolbar"><h2 style="margin-right:auto">Inventario de productos</h2><button class="accent" onclick="openProduct()">＋ Crear producto</button><button class="soft" onclick="loadProducts()">Actualizar</button></div><div class="tablewrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Existencia</th><th>Acciones</th></tr></thead><tbody id="productTable"></tbody></table></div></div></section>
+<section id="tab-clientes" class="section"><div class="panel"><div class="toolbar"><h2 style="margin-right:auto">Clientes</h2><button class="accent" onclick="newRecord('cliente')">＋ Nuevo cliente</button></div><div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Documento</th><th>Teléfono</th><th>Acción</th></tr></thead><tbody id="clientTable"></tbody></table></div><p class="muted">Los clientes se consultan y guardan en el servidor; no se simulan registros localmente.</p></div></section>
+<section id="tab-proveedores" class="section"><div class="panel"><div class="toolbar"><h2 style="margin-right:auto">Proveedores</h2><button class="accent" onclick="newRecord('proveedor')">＋ Nuevo proveedor</button></div><div class="tablewrap"><table><thead><tr><th>Proveedor</th><th>NIT / Documento</th><th>Teléfono</th><th>Acción</th></tr></thead><tbody id="supplierTable"></tbody></table></div></div></section>
+<section id="tab-apartados" class="section"><div class="panel"><h2>Apartados pendientes</h2><div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th></tr></thead><tbody id="apartadosTable"></tbody></table></div></div></section>
+<section id="tab-creditos" class="section"><div class="panel"><h2>Créditos / cuentas por cobrar</h2><div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Valor</th><th>Abonado</th><th>Saldo</th><th>Acción</th></tr></thead><tbody id="creditTable"></tbody></table></div></div></section>
+<section id="tab-ventas" class="section"><div class="panel"><div class="toolbar"><h2 style="margin-right:auto">Historial de ventas</h2><input type="date" id="salesDate"><button class="soft" onclick="loadSales()">Consultar</button></div><div class="tablewrap"><table><thead><tr><th>Factura</th><th>Fecha</th><th>Cliente</th><th>Vendedor</th><th>Medios de pago</th><th>Total</th><th>Factura</th></tr></thead><tbody id="salesTable"></tbody></table></div></div></section>
+<section id="tab-cierre" class="section"><div class="panel"><div class="toolbar"><h2 style="margin-right:auto">Cierre y arqueo de caja</h2><input type="date" id="closeDate"><button class="primary" onclick="loadClose()">Calcular cierre</button></div><div id="closeContent"><div class="empty">Seleccione la fecha y calcule el cierre.</div></div></div></section>
+<section id="tab-reportes" class="section"><div class="panel"><h2>Resumen de ventas</h2><div class="toolbar"><label>Desde <input type="date" id="fromDate"></label><label>Hasta <input type="date" id="toDate"></label><button class="primary" onclick="loadReports()">Generar reporte</button></div><div id="reportContent" class="empty">Seleccione un rango de fechas.</div></div></section>
+</main>
+<div id="modal" class="modal hidden"><div class="dialog"><div id="modalContent"></div></div></div>
+<div id="invoicePrint" class="hidden"></div>
 <script>
-const API=''; let productos=[],carrito=[],usuarioActual=null;
-function setTab(t){
- if(t==='pos') return;
- if(t==='productos'){abrirAdd();return;}
- if(t==='clientes'){
-   let nombre = prompt('CLIENTE F6 - Nombre:', document.getElementById('cliente').value);
-   if(nombre){ document.getElementById('cliente').value = nombre; document.getElementById('cartCliente').innerText = nombre; }
-   return;
- }
- if(t==='proveedores'){
-   let prov = prompt('PROVEEDOR F7 - Nombre proveedor:');
-   if(prov){ alert('Proveedor '+prov+' guardado'); }
-   return;
- }
- if(t==='apartados'){apartar();return;}
- if(t==='creditos'){credito();return;}
- if(t==='ventas'){verVentas();return;}
- if(t==='base'){let b=prompt('Base inicial:',document.getElementById('base').value); if(b) document.getElementById('base').value=b; return;}
- if(t==='reportes'){verVentas();return;}
-}
-async function login(){
- const nombre=document.getElementById('user').value.trim(); const pin=document.getElementById('pin').value.trim();
- const r=await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,pin})});
- const d=await r.json(); if(!r.ok) return alert(d.error);
- usuarioActual=d.usuario; document.getElementById('loginScreen').style.display='none'; cargarProductos();
-}
-async function cargarProductos(){
- const grid=document.getElementById('productosGrid'); const filtro=document.getElementById('fCategoria').value; const bus=document.getElementById('buscar').value.toLowerCase();
- try{
-  const r=await fetch(API+'/api/productos'); productos=await r.json();
-  let list=productos;
-  if(filtro) list=list.filter(p=>p.categoria===filtro);
-  if(bus) list=list.filter(p=>p.nombre.toLowerCase().includes(bus));
-  if(list.length===0){grid.innerHTML='<div style=padding:20px>Sin productos. Dale + Producto.<br>Ej: CARLOS, Labial, Pola.</div>';return}
-  grid.innerHTML=list.map(p=>`<div class="card" onclick="addCarrito(${p.id})"><div style="font-size:28px">${emoji(p)}</div><div style="font-size:12px;font-weight:bold">${p.nombre}</div><div class="price">$${Number(p.precio).toLocaleString()}</div><div style="font-size:10px"><span class="tag">${p.categoria||'General'}</span><br>Stock: ${p.stock}</div></div>`).join('');
- }catch(e){grid.innerHTML='Error: '+e.message;}
-}
-function emoji(p){
- const n=(p.nombre||'').toLowerCase(); const c=(p.categoria||'').toLowerCase();
- if(c==='cosmeticos'||n.includes('labial')||n.includes('crema')) return '💄';
- if(n.includes('pola')||n.includes('poker')) return '🍺';
- if(n.includes('guaro')||n.includes('ron')) return '🥃';
- if(n.includes('carlos')) return '👤';
- return '📦';
-}
-function addCarrito(id){
- const p=productos.find(x=>x.id===id); const ex=carrito.find(x=>x.id===id);
- if(ex) ex.cant++; else carrito.push({...p,cant:1});
- document.getElementById('cartCliente').innerText=document.getElementById('cliente').value||'Mostrador';
- renderCarrito();
-}
-function renderCarrito(){
- document.getElementById('cartCount').innerText=carrito.length;
- let sub=0; document.getElementById('cartItems').innerHTML=carrito.map((c,i)=>{sub+=c.precio*c.cant; return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px dashed #ddd"><span>${c.nombre} x${c.cant}</span><span>$${(c.precio*c.cant).toLocaleString()} <b onclick="carrito.splice(${i},1);renderCarrito()" style="color:red;cursor:pointer">X</b></span></div>`}).join('');
- document.getElementById('subTxt').innerText='$'+sub.toLocaleString(); document.getElementById('totalTxt').innerText='$'+sub.toLocaleString();
-}
-function abrirAdd(){document.getElementById('addModal').style.display='flex';}
-async function guardarProducto(){
- const nombre=document.getElementById('pNombre').value; const precio=document.getElementById('pPrecio').value; const stock=document.getElementById('pStock').value||0; const codigo=document.getElementById('pCodigo').value; const categoria=document.getElementById('pCategoria').value;
- if(!nombre||!precio) return alert('Nombre y precio');
- const r=await fetch(API+'/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,stock,categoria,codigo})});
- if(r.ok){document.getElementById('addModal').style.display='none'; document.getElementById('pNombre').value=''; cargarProductos();}
-}
-async function cobrar(){
- if(carrito.length===0) return alert('Vacio');
- const total=carrito.reduce((s,c)=>s+c.precio*c.cant,0); const cliente=document.getElementById('cliente').value||'Mostrador';
- const r=await fetch(API+'/api/ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos:{carrito,cliente,base:document.getElementById('base').value,tipo:'contado'},total,usuario:usuarioActual.nombre})});
- if(r.ok){document.getElementById('msg').innerText='✅ COBRADA $'+total.toLocaleString(); carrito=[];renderCarrito();}
-}
-async function apartar(){
- if(carrito.length===0) return alert('Vacio');
- const total=carrito.reduce((s,c)=>s+c.precio*c.cant,0); const cliente=document.getElementById('cliente').value||'Mostrador';
- const r=await fetch(API+'/api/ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos:{carrito,cliente,tipo:'apartado'},total,usuario:usuarioActual.nombre})});
- if(r.ok){document.getElementById('msg').innerText='📦 APARTADO $'+total.toLocaleString(); carrito=[];renderCarrito();}
-}
-async function credito(){
- if(carrito.length===0) return alert('Vacio');
- const total=carrito.reduce((s,c)=>s+c.precio*c.cant,0); const cliente=document.getElementById('cliente').value; if(!cliente) return alert('Escribe cliente F6');
- const r=await fetch(API+'/api/ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos:{carrito,cliente,tipo:'credito'},total,usuario:usuarioActual.nombre})});
- if(r.ok){document.getElementById('msg').innerText='💳 FIADO $'+total.toLocaleString()+' a '+cliente; carrito=[];renderCarrito();}
-}
-async function verVentas(){
- const r=await fetch(API+'/api/ventas'); const v=await r.json();
- alert('VENTAS - Ultimas 15\n\n'+v.slice(0,15).map(x=>`#${x.id} $${Number(x.total).toLocaleString()} ${x.usuario} ${x.datos?.cliente||''} ${x.datos?.tipo||''}`).join('\n'));
-}
-</script>
-</body>
-</html>
+const API='';let products=[],cart=[],user=null,lastInvoice=null;
+const money=n=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(n)||0);
+const today=()=>new Date().toLocaleDateString('en-CA');
+async function api(path,options={}){const r=await fetch(API+path,{...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||d.message||`Error ${r.status}`);return d}
+function payload(method,body){return {method,body:JSON.stringify(body)}}
+async function login(){try{const nombre=document.getElementById('user').value.trim(),pin=document.getElementById('pin').value;const d=await api('/api/login',payload('POST',{nombre,pin}));user=d.usuario;document.getElementById('loginScreen').classList.add('hidden');document.getElementById('userLabel').textContent=user.nombre||nombre;await loadProducts()}catch(e){document.getElementById('loginError').textContent=e.message}}
+function logout(){user=null;location.reload()}
+function showTab(tab,btn){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));(btn||document.querySelector(`[data-tab="${tab}"]`)).classList.add('active');if(tab==='productos')renderProductTable();if(tab==='clientes')loadDirectory('clientes');if(tab==='proveedores')loadDirectory('proveedores');if(tab==='ventas')loadSales();if(tab==='cierre')loadClose();if(tab==='apartados')loadSpecial('apartados');if(tab==='creditos')loadSpecial('creditos');if(tab==='reportes'){} }
+async function loadProducts(){try{products=await api('/api/productos');if(!Array.isArray(products))products=[];renderProducts();renderProductTable()}catch(e){document.getElementById('products').innerHTML=`<div class="empty">No fue posible cargar inventario: ${e.message}</div>`}}
+function renderProducts(){const q=document.getElementById('buscar').value.toLowerCase(),cat=document.getElementById('categoria').value;const list=products.filter(p=>(!cat||p.categoria===cat)&&(`${p.nombre} ${p.codigo||''}`).toLowerCase().includes(q));document.getElementById('products').innerHTML=list.length?list.map(p=>`<button class="product" onclick="addCart(${Number(p.id)})"><span>📦</span><strong>${esc(p.nombre)}</strong><span class="price">${money(p.precio)}</span><span class="stock">${esc(p.categoria||'General')} · Stock: ${Number(p.stock)||0}</span></button>`).join(''):'<div class="empty">No hay productos que coincidan.</div>'}
+function renderProductTable(){document.getElementById('productTable').innerHTML=products.map(p=>`<tr><td>${esc(p.codigo||'—')}</td><td>${esc(p.nombre)}</td><td>${esc(p.categoria||'General')}</td><td>${money(p.precio)}</td><td>${p.stock}</td><td><button class="soft" onclick="openProduct(${Number(p.id)})">Editar</button> <button class="danger" onclick="deleteProduct(${Number(p.id)})">Eliminar</button></td></tr>`).join('')||'<tr><td colspan="6">Sin productos</td></tr>'}
+function addCart(id){const p=products.find(x=>Number(x.id)===id);if(!p)return;if(Number(p.stock)<=0)return alert('Producto sin existencias');const x=cart.find(x=>Number(x.id)===id);if(x){if(x.cant+1>Number(p.stock))return alert('No hay suficiente inventario');x.cant++}else cart.push({...p,cant:1});renderCart()}
+function cartTotal(){return cart.reduce((s,x)=>s+Number(x.precio)*x.cant,0)}
+function renderCart(){document.getElementById('cartItems').className=cart.length?'':'empty';document.getElementById('cartItems').innerHTML=cart.length?cart.map((x,i)=>`<div class="cartline"><div><b>${esc(x.nombre)}</b><small>${money(x.precio)} c/u · ${money(x.precio*x.cant)}</small><div class="qty"><button onclick="changeQty(${i},-1)">−</button><b>${x.cant}</b><button onclick="changeQty(${i},1)">＋</button></div></div><button class="danger" onclick="removeCart(${i})">×</button></div>`).join(''):'Agregue productos a la venta';document.getElementById('subtotal').textContent=money(cartTotal());document.getElementById('total').textContent=money(cartTotal())}
+function changeQty(i,n){const x=cart[i],p=products.find(p=>p.id===x.id);if(n>0&&x.cant>=Number(p.stock))return alert('Stock insuficiente');x.cant+=n;if(x.cant<=0)cart.splice(i,1);renderCart()}function removeCart(i){cart.splice(i,1);renderCart()}function clearCart(){if(confirm('¿Vaciar la venta actual?')){cart=[];renderCart()}}
+function openModal(html){document.getElementById('modalContent').innerHTML=html;document.getElementById('modal').classList.remove('hidden')}function closeModal(){document.getElementById('modal').classList.add('hidden')}
+function openPayment(){if(!cart.length)return alert('Agregue al menos un producto.');const t=cartTotal();openModal(`<h2>Registrar pago</h2><div class="summary"><b>Total de la venta: ${money(t)}</b><p class="muted">Puede dividir el pago entre varios medios. El valor recibido debe cubrir exactamente el total.</p></div><div class="payrow"><label>💵 Efectivo</label><input id="payCash" type="number" min="0" value="${t}" oninput="updatePaymentSum()"></div><div class="payrow"><label>📱 Nequi</label><input id="payNequi" type="number" min="0" value="0" oninput="updatePaymentSum()"></div><div class="payrow"><label>📱 Daviplata</label><input id="payDavi" type="number" min="0" value="0" oninput="updatePaymentSum()"></div><div class="payrow"><label>🏦 Transferencia / otro</label><input id="payOther" type="number" min="0" value="0" oninput="updatePaymentSum()"></div><div class="summary"><div class="totalrow"><span>Total recibido</span><b id="paySum">${money(t)}</b></div><div class="totalrow"><span>Diferencia</span><b id="payDiff">$0</b></div><div class="field"><label>Referencia / comprobante (opcional)</label><input id="payRef" placeholder="Número de transacción"></div></div><div class="actions"><button class="soft" onclick="closeModal()">Cancelar</button><button class="primary" onclick="completeSale()">Confirmar venta e imprimir factura</button></div>`)}
+function updatePaymentSum(){const sum=['payCash','payNequi','payDavi','payOther'].reduce((s,id)=>s+Math.max(0,Number(document.getElementById(id).value)||0),0),diff=sum-cartTotal();document.getElementById('paySum').textContent=money(sum);document.getElementById('payDiff').textContent=money(diff);document.getElementById('payDiff').style.color=diff===0?'#166534':'#b91c1c'}
+async function completeSale(){const total=cartTotal(),payments={efectivo:Number(document.getElementById('payCash').value)||0,nequi:Number(document.getElementById('payNequi').value)||0,daviplata:Number(document.getElementById('payDavi').value)||0,transferencia:Number(document.getElementById('payOther').value)||0};const received=Object.values(payments).reduce((a,b)=>a+b,0);if(Object.values(payments).some(x=>x<0)||received!==total)return alert('El total recibido debe ser exactamente igual al total de la venta.');const body={datos:{carrito:cart.map(x=>({id:x.id,nombre:x.nombre,precio:Number(x.precio),cant:x.cant,codigo:x.codigo||''})),cliente:document.getElementById('cliente').value.trim()||'Mostrador',tipo:'contado',pagos:payments,referencia:document.getElementById('payRef').value},total,usuario:user?.nombre||'',fecha:new Date().toISOString()};try{const d=await api('/api/ventas',payload('POST',body));lastInvoice=d.venta||d;cart=[];renderCart();closeModal();document.getElementById('posMsg').textContent='Venta registrada correctamente.';await loadProducts();printInvoice(lastInvoice,body)}catch(e){alert('No se pudo registrar la venta: '+e.message+'. No se vació el carrito.')}}
+async function saveSpecial(type){if(!cart.length)return alert('Agregue productos.');const cliente=document.getElementById('cliente').value.trim();if(type==='credito'&&!cliente)return alert('Indique el nombre del cliente para el crédito.');try{await api('/api/ventas',payload('POST',{datos:{carrito:cart,cliente:cliente||'Sin cliente',tipo},total:cartTotal(),usuario:user?.nombre||''}));cart=[];renderCart();await loadProducts();alert(type==='credito'?'Crédito registrado.':'Apartado registrado.')}catch(e){alert('El servidor no confirmó el registro: '+e.message)}}
+function openProduct(id){const p=products.find(x=>Number(x.id)===Number(id))||{};openModal(`<h2>${p.id?'Editar producto':'Crear producto'}</h2><div class="formgrid"><div class="field full"><label>Nombre</label><input id="fName" value="${attr(p.nombre||'')}"></div><div class="field"><label>Código</label><input id="fCode" value="${attr(p.codigo||'')}"></div><div class="field"><label>Categoría</label><select id="fCat">${['General','Licores','Bebidas','Comidas','Cosmeticos','Snacks','Abarrotes'].map(x=>`<option ${p.categoria===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>Precio de venta</label><input id="fPrice" type="number" min="0" value="${p.precio??''}"></div><div class="field"><label>Existencias</label><input id="fStock" type="number" min="0" value="${p.stock??0}"></div></div><div class="actions"><button class="soft" onclick="closeModal()">Cancelar</button><button class="primary" onclick="saveProduct(${p.id||'null'})">Guardar</button></div>`)}
+async function saveProduct(id){const body={nombre:document.getElementById('fName').value.trim(),codigo:document.getElementById('fCode').value.trim(),categoria:document.getElementById('fCat').value,precio:Number(document.getElementById('fPrice').value),stock:Number(document.getElementById('fStock').value)};if(!body.nombre||body.precio<0||body.stock<0||!Number.isFinite(body.precio)||!Number.isFinite(body.stock))return alert('Revise nombre, precio y existencias.');try{await api(id?`/api/productos/${id}`:'/api/productos',payload(id?'PUT':'POST',body));closeModal();await loadProducts()}catch(e){alert('El servidor debe soportar guardar/editar productos: '+e.message)}}
+async function deleteProduct(id){if(!confirm('¿Eliminar este producto?'))return;try{await api('/api/productos/'+id,{method:'DELETE'});await loadProducts()}catch(e){alert('No se pudo eliminar: '+e.message)}}
+function newRecord(type){const title=type==='cliente'?'Cliente':'Proveedor';openModal(`<h2>Nuevo ${title.toLowerCase()}</h2><div class="formgrid"><div class="field full"><label>Nombre / razón social</label><input id="recName"></div><div class="field"><label>Documento / NIT</label><input id="recDoc"></div><div class="field"><label>Teléfono</label><input id="recPhone"></div><div class="field full"><label>Dirección</label><input id="recAddress"></div></div><div class="actions"><button class="soft" onclick="closeModal()">Cancelar</button><button class="primary" onclick="saveDirectory('${type}')">Guardar</button></div>`)}
+async function saveDirectory(type){const body={nombre:document.getElementById('recName').value.trim(),documento:document.getElementById('recDoc').value.trim(),telefono:document.getElementById('recPhone').value.trim(),direccion:document.getElementById('recAddress').value.trim()};if(!body.nombre)return alert('Escriba el nombre.');try{await api(type==='cliente'?'/api/clientes':'/api/proveedores',payload('POST',body));closeModal();loadDirectory(type==='cliente'?'clientes':'proveedores')}catch(e){alert('El backend aún no confirma este módulo: '+e.message)}}
+async function loadDirectory(type){const id=type==='clientes'?'clientTable':'supplierTable';try{const arr=await api('/api/'+type);document.getElementById(id).innerHTML=arr.map(x=>`<tr><td>${esc(x.nombre)}</td><td>${esc(x.documento||'—')}</td><td>${esc(x.telefono||'—')}</td><td>—</td></tr>`).join('')||'<tr><td colspan="4">Sin registros</td></tr>'}catch(e){document.getElementById(id).innerHTML=`<tr><td colspan="4">El servidor no tiene habilitado /api/${type}.</td></tr>`}}
+async function loadSales(){try{const v=await api('/api/ventas'+(document.getElementById('salesDate').value?'?fecha='+document.getElementById('salesDate').value:''));document.getElementById('salesTable').innerHTML=v.map(x=>`<tr><td>#${x.id}</td><td>${dateFmt(x.fecha||x.created_at)}</td><td>${esc(x.datos?.cliente||x.cliente||'Mostrador')}</td><td>${esc(x.usuario||'')}</td><td>${paymentText(x.datos?.pagos||x.pagos)}</td><td><b>${money(x.total)}</b></td><td><button class="soft" onclick="reprint(${Number(x.id)})">Imprimir</button></td></tr>`).join('')||'<tr><td colspan="7">Sin ventas.</td></tr>'}catch(e){document.getElementById('salesTable').innerHTML=`<tr><td colspan="7">${esc(e.message)}</td></tr>`}}
+async function reprint(id){try{const v=await api('/api/ventas/'+id);printInvoice(v)}catch(e){alert('No se pudo recuperar el detalle de la factura: '+e.message)}}
+function paymentText(p){if(!p)return 'No informado';return Object.entries(p).filter(([k,v])=>Number(v)>0).map(([k,v])=>`${k}: ${money(v)}`).join(' · ')||'No informado'}
+function printInvoice(v,fallback){const d=v.datos||fallback?.datos||{},items=d.carrito||v.carrito||[],payments=d.pagos||v.pagos||{};const invoice=document.getElementById('invoicePrint');invoice.innerHTML=`<div style="text-align:center"><h2>LA CHACARITA</h2><b>FACTURA / COMPROBANTE DE VENTA</b><p>Nombre del negocio · NIT: __________________</p><p>Dirección: ______________________________</p><p>Teléfono: _______________________________</p></div><hr><p><b>Factura:</b> ${v.id?'#'+v.id:'Pendiente'}　<b>Fecha:</b> ${dateFmt(v.fecha||v.created_at||new Date().toISOString())}</p><p><b>Cliente:</b> ${esc(d.cliente||v.cliente||'Mostrador')}　<b>Vendedor:</b> ${esc(v.usuario||fallback?.usuario||user?.nombre||'')}</p><hr><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">Producto</th><th>Cant.</th><th>Vr. unit.</th><th>Total</th></tr></thead><tbody>${items.map(x=>`<tr><td>${esc(x.nombre)}</td><td>${x.cant}</td><td>${money(x.precio)}</td><td>${money(x.precio*x.cant)}</td></tr>`).join('')}</tbody></table><hr><h3 style="text-align:right">TOTAL: ${money(v.total??fallback?.total)}</h3><b>MEDIOS DE PAGO</b><p>${paymentText(payments)}</p><p>Referencia: ${esc(d.referencia||'—')}</p><hr><p style="text-align:center">¡Gracias por su compra!</p><p style="text-align:center;font-size:10px">Conserve este comprobante.</p>`;window.print()}
+async function loadClose(){const date=document.getElementById('closeDate').value||today();document.getElementById('closeDate').value=date;const host=document.getElementById('closeContent');try{const d=await api('/api/caja/resumen?fecha='+date);const pm=d.pagos||{};host.innerHTML=`<div class="kpis"><div class="kpi"><span>Ventas de contado</span><b>${money(d.total_ventas)}</b></div><div class="kpi"><span>Efectivo esperado en caja</span><b>${money(d.efectivo_esperado)}</b></div><div class="kpi"><span>Base inicial</span><b>${money(d.base_inicial)}</b></div><div class="kpi"><span>Saldo esperado</span><b>${money(d.saldo_esperado)}</b></div></div><h3>Ventas por medio de pago</h3><table><tbody>${['efectivo','nequi','daviplata','transferencia'].map(k=>`<tr><td>${k.toUpperCase()}</td><td>${money(pm[k]||0)}</td></tr>`).join('')}<tr><th>Total recibido en ventas</th><th>${money(d.total_recibido)}</th></tr></tbody></table><h3 style="margin-top:18px">Arqueo físico</h3><div class="formgrid"><div class="field"><label>Efectivo contado</label><input id="countCash" type="number" min="0" value="${d.efectivo_esperado||0}"></div><div class="field"><label>Base inicial confirmada</label><input id="countBase" type="number" min="0" value="${d.base_inicial||0}"></div><div class="field"><label>Observaciones</label><input id="closeNotes" placeholder="Novedades, retiros autorizados…"></div></div><div class="summary"><div class="totalrow"><b>Diferencia de efectivo</b><b id="closeDiff">$0</b></div><p class="muted">La diferencia se calcula contra el efectivo esperado informado por el servidor. Nequi y Daviplata se concilian con sus comprobantes, no como efectivo físico.</p></div><button class="primary" onclick="confirmClose('${date}')">Confirmar y guardar cierre</button>`;document.getElementById('countCash').addEventListener('input',()=>{const diff=Number(document.getElementById('countCash').value)-Number(d.efectivo_esperado||0);document.getElementById('closeDiff').textContent=money(diff);document.getElementById('closeDiff').style.color=diff===0?'#166534':'#b91c1c'})}catch(e){host.innerHTML=`<div class="notice">No se pudo obtener el cierre desde el servidor (${esc(e.message)}). Para evitar descuadres, el backend debe calcular las ventas por fecha y separar efectivo, Nequi, Daviplata y otros pagos. No se debe cerrar usando cifras inventadas del navegador.</div>`}}
+async function confirmClose(date){const efectivo_contado=Number(document.getElementById('countCash').value),base_inicial=Number(document.getElementById('countBase').value),observaciones=document.getElementById('closeNotes').value;try{const d=await api('/api/caja/cierre',payload('POST',{fecha:date,efectivo_contado,base_inicial,observaciones,usuario:user?.nombre||''}));alert(d.message||'Cierre guardado correctamente.');loadClose()}catch(e){alert('No se guardó el cierre: '+e.message+'. El servidor debe validar que no exista otro cierre para la misma caja/fecha.') }}
+async function loadSpecial(type){const id=type==='apartados'?'apartadosTable':'creditTable';try{const d=await api('/api/'+type);document.getElementById(id).innerHTML=d.map(x=>`<tr><td>${dateFmt(x.fecha)}</td><td>${esc(x.datos?.cliente||x.cliente||'')}</td><td>${money(x.total)}</td>${type==='creditos'?`<td>${money(x.abonado||0)}</td><td>${money((x.total||0)-(x.abonado||0))}</td><td>—</td>`:'<td>'+esc(x.estado||'Pendiente')+'</td>'}</tr>`).join('')||'<tr><td colspan="6">Sin registros</td></tr>'}catch(e){document.getElementById(id).innerHTML=`<tr><td colspan="6">Módulo no disponible en el servidor: ${esc(e.message)}</td></tr>`}}
+async function loadReports(){try{const d=await api('/api/reportes/ventas?desde='+document.getElementById('fromDate').value+'&hasta='+document.getElementById('toDate').value);document.getElementById('reportContent').innerHTML=`<div class="kpis"><div class="kpi"><span>Ventas</span><b>${money(d.total_ventas)}</b></div><div class="kpi"><span>Número de operaciones</span><b>${d.cantidad_ventas||0}</b></div><div class="kpi"><span>Ticket promedio</span><b>${money(d.ticket_promedio)}</b></div></div><table><tbody>${Object.entries(d.pagos||{}).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${money(v)}</td></tr>`).join('')}</tbody></table>`}catch(e){document.getElementById('reportContent').textContent='Reporte no disponible: '+e.message}}
+function dateFmt(v){if(!v)return '—';const d=new Date(v);return isNaN(d)?String(v):d.toLocaleString('es-CO')}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function attr(s){return esc(s)}
+document.getElementById('closeDate').value=today();document.getElementById('salesDate').value=today();document.getElementById('fromDate').value=today();document.getElementById('toDate').value=today();document.addEventListener('keydown',e=>{if(e.key==='F1'){e.preventDefault();document.querySelector('[data-tab="pos"]').click()}if(e.key==='Escape')closeModal()});renderCart();
+</script></body></html>
