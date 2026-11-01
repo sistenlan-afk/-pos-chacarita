@@ -1,46 +1,83 @@
-const express=require('express'),cors=require('cors'),{Pool}=require('pg'),bcrypt=require('bcryptjs'),jwt=require('jsonwebtoken'),path=require('path');
-const app=express();app.use(cors());app.use(express.json({limit:'1mb'}));app.use(express.static(__dirname));
-if(!process.env.DATABASE_URL||!process.env.JWT_SECRET)throw Error('Configure DATABASE_URL y JWT_SECRET');
-const pool=new Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_SSL==='false'?false:{rejectUnauthorized:false}});
-const PORT=process.env.PORT||10000,roles=['administrador','vendedor'],n=v=>Number.isFinite(Number(v))?Number(v):0;
-const wrap=f=>(q,s,next)=>Promise.resolve(f(q,s,next)).catch(next);
-function auth(q,s,next){try{const t=(q.headers.authorization||'').replace(/^Bearer\s+/i,'');if(!t)throw 0;q.user=jwt.verify(t,process.env.JWT_SECRET);next()}catch{s.status(401).json({error:'Sesión vencida o no válida. Ingrese nuevamente.'})}}
-function admin(q,s,next){if(q.user?.rol!=='administrador')return s.status(403).json({error:'Permiso exclusivo del administrador.'});next()}
+const express = require('express');
+const cors = require('cors');
+const { Pool } = require('pg');
+const path = require('path');
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname)));
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false });
+
 async function init(){
- await pool.query(`
- CREATE TABLE IF NOT EXISTS usuarios(id SERIAL PRIMARY KEY,nombre VARCHAR(100) UNIQUE NOT NULL,pin_hash VARCHAR(255) NOT NULL,rol VARCHAR(20) NOT NULL DEFAULT 'vendedor',creado TIMESTAMP DEFAULT NOW());
- ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE;
- CREATE TABLE IF NOT EXISTS productos(id SERIAL PRIMARY KEY,nombre VARCHAR(150) NOT NULL,precio NUMERIC(14,2) NOT NULL,stock NUMERIC(14,3) DEFAULT 0,categoria VARCHAR(80) DEFAULT 'General',codigo VARCHAR(80),creado TIMESTAMP DEFAULT NOW());
- CREATE UNIQUE INDEX IF NOT EXISTS productos_codigo_unique ON productos(codigo) WHERE codigo IS NOT NULL AND codigo<>'';
- CREATE TABLE IF NOT EXISTS ventas(id SERIAL PRIMARY KEY,datos JSONB,total NUMERIC(14,2),fecha TIMESTAMP DEFAULT NOW(),usuario VARCHAR(100));
- ALTER TABLE ventas ADD COLUMN IF NOT EXISTS estado VARCHAR(20) NOT NULL DEFAULT 'registrada';
- CREATE TABLE IF NOT EXISTS clientes(id SERIAL PRIMARY KEY,nombre VARCHAR(150) NOT NULL,documento VARCHAR(80),telefono VARCHAR(80),direccion TEXT,creado TIMESTAMP DEFAULT NOW());
- CREATE TABLE IF NOT EXISTS proveedores(id SERIAL PRIMARY KEY,nombre VARCHAR(150) NOT NULL,documento VARCHAR(80),telefono VARCHAR(80),direccion TEXT,creado TIMESTAMP DEFAULT NOW());
- CREATE TABLE IF NOT EXISTS cierres_caja(id SERIAL PRIMARY KEY,fecha DATE NOT NULL UNIQUE,total_ventas NUMERIC(14,2),efectivo NUMERIC(14,2),nequi NUMERIC(14,2),daviplata NUMERIC(14,2),otros NUMERIC(14,2),efectivo_contado NUMERIC(14,2),base_inicial NUMERIC(14,2),diferencia NUMERIC(14,2),observaciones TEXT,usuario VARCHAR(100),creado TIMESTAMP DEFAULT NOW());`);
- const uname=process.env.ADMIN_USER||'admin',pass=process.env.ADMIN_PASSWORD||'LaChacarita2026!';
- const exists=await pool.query('SELECT id FROM usuarios WHERE nombre=$1',[uname]);
- if(!exists.rowCount)await pool.query("INSERT INTO usuarios(nombre,pin_hash,rol) VALUES($1,$2,'administrador')",[uname,await bcrypt.hash(pass,12)]);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS usuarios (id SERIAL PRIMARY KEY, nombre TEXT UNIQUE NOT NULL, pin TEXT, rol TEXT DEFAULT 'vendedor', activo BOOLEAN DEFAULT true, created_at TIMESTAMP DEFAULT NOW());
+    CREATE TABLE IF NOT EXISTS productos (id SERIAL PRIMARY KEY, nombre TEXT NOT NULL, codigo TEXT, categoria TEXT DEFAULT 'General', precio NUMERIC DEFAULT 0, stock NUMERIC DEFAULT 0, created_at TIMESTAMP DEFAULT NOW());
+    CREATE TABLE IF NOT EXISTS clientes (id SERIAL PRIMARY KEY, nombre TEXT NOT NULL, documento TEXT, telefono TEXT, direccion TEXT, created_at TIMESTAMP DEFAULT NOW());
+    CREATE TABLE IF NOT EXISTS proveedores (id SERIAL PRIMARY KEY, nombre TEXT NOT NULL, documento TEXT, telefono TEXT, direccion TEXT, created_at TIMESTAMP DEFAULT NOW());
+    CREATE TABLE IF NOT EXISTS ventas (id SERIAL PRIMARY KEY, fecha TIMESTAMP DEFAULT NOW(), datos JSONB, total NUMERIC DEFAULT 0, usuario TEXT, cliente TEXT, tipo TEXT DEFAULT 'contado', pagos JSONB, created_at TIMESTAMP DEFAULT NOW());
+    CREATE TABLE IF NOT EXISTS cierres (id SERIAL PRIMARY KEY, fecha DATE NOT NULL UNIQUE, usuario TEXT, base_inicial NUMERIC DEFAULT 0, efectivo_esperado NUMERIC DEFAULT 0, efectivo_contado NUMERIC DEFAULT 0, total_ventas NUMERIC DEFAULT 0, pagos JSONB, observaciones TEXT, created_at TIMESTAMP DEFAULT NOW());
+  `);
+  // MIGRACION PARA BASE VIEJA
+  await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS pin TEXT`).catch(()=>{});
+  await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol TEXT`).catch(()=>{});
+  await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activo BOOLEAN`).catch(()=>{});
+  await pool.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS pagos JSONB`).catch(()=>{});
+  await pool.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente TEXT`).catch(()=>{});
+  await pool.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo TEXT`).catch(()=>{});
+  await pool.query(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS codigo TEXT`).catch(()=>{});
+
+  await pool.query(`UPDATE usuarios SET pin='1234' WHERE LOWER(nombre)=LOWER('JOEL') AND (pin IS NULL OR pin='')`).catch(()=>{});
+  
+  const u = await pool.query(`SELECT * FROM usuarios WHERE LOWER(nombre)=LOWER('JOEL')`).catch(()=>({rows:[]}));
+  if(u.rows.length===0){
+    await pool.query(`INSERT INTO usuarios(nombre,pin,rol) VALUES('JOEL','1234','admin') ON CONFLICT (nombre) DO UPDATE SET pin='1234', rol='admin'`).catch(async()=>{
+      await pool.query(`INSERT INTO usuarios(nombre,pin,rol) VALUES('JOEL','1234','admin')`);
+    });
+    await pool.query(`INSERT INTO usuarios(nombre,pin,rol) VALUES('CARLOS','0000','vendedor') ON CONFLICT DO NOTHING`).catch(()=>{});
+  }
+  console.log("POS V15.2 listo");
 }
-app.get('/api/health',(q,s)=>s.json({ok:true}));
-app.post('/api/login',wrap(async(q,s)=>{const name=String(q.body.nombre||'').trim(),pin=String(q.body.pin||'');const r=await pool.query('SELECT * FROM usuarios WHERE lower(nombre)=lower($1)',[name]);if(!r.rowCount||!r.rows[0].activo||!await bcrypt.compare(pin,r.rows[0].pin_hash))return s.status(401).json({error:'Usuario o contraseña incorrectos.'});const u=r.rows[0],token=jwt.sign({id:u.id,nombre:u.nombre,rol:u.rol},process.env.JWT_SECRET,{expiresIn:'12h'});s.json({ok:true,token,usuario:{id:u.id,nombre:u.nombre,rol:u.rol}})}));
-app.use('/api',(q,s,next)=>q.path==='/login'||q.path==='/health'?next():auth(q,s,next));
-app.get('/api/usuarios',admin,wrap(async(q,s)=>s.json((await pool.query('SELECT id,nombre,rol,activo,creado FROM usuarios ORDER BY id')).rows)));
-app.post('/api/usuarios',admin,wrap(async(q,s)=>{const {nombre,pin,rol='vendedor'}=q.body;if(!nombre?.trim()||String(pin||'').length<6||!roles.includes(rol))return s.status(400).json({error:'Usuario, contraseña mínima de 6 caracteres y rol válido requeridos.'});const r=await pool.query('INSERT INTO usuarios(nombre,pin_hash,rol) VALUES($1,$2,$3) RETURNING id,nombre,rol,activo',[nombre.trim(),await bcrypt.hash(String(pin),12),rol]);s.status(201).json(r.rows[0])}));
-app.put('/api/usuarios/:id',admin,wrap(async(q,s)=>{if(!roles.includes(q.body.rol))return s.status(400).json({error:'Rol inválido.'});if(Number(q.params.id)===q.user.id&&q.body.activo===false)return s.status(400).json({error:'No puede desactivar su propio usuario.'});const r=await pool.query('UPDATE usuarios SET rol=$1,activo=COALESCE($2,activo) WHERE id=$3 RETURNING id,nombre,rol,activo',[q.body.rol,q.body.activo,q.params.id]);if(!r.rowCount)return s.status(404).json({error:'Usuario no encontrado'});s.json(r.rows[0])}));
-app.put('/api/usuarios/:id/password',wrap(async(q,s)=>{const id=Number(q.params.id);if(q.user.rol!=='administrador'&&q.user.id!==id)return s.status(403).json({error:'Sin permiso.'});const {actual,nueva}=q.body;if(String(nueva||'').length<6)return s.status(400).json({error:'Mínimo 6 caracteres.'});const r=await pool.query('SELECT pin_hash FROM usuarios WHERE id=$1',[id]);if(!r.rowCount)return s.status(404).json({error:'Usuario no encontrado'});if(q.user.rol!=='administrador'&&!await bcrypt.compare(String(actual||''),r.rows[0].pin_hash))return s.status(401).json({error:'Contraseña actual incorrecta.'});await pool.query('UPDATE usuarios SET pin_hash=$1 WHERE id=$2',[await bcrypt.hash(String(nueva),12),id]);s.json({ok:true})}));
-app.get('/api/productos',wrap(async(q,s)=>s.json((await pool.query('SELECT * FROM productos ORDER BY id DESC')).rows)));
-app.post('/api/productos',admin,wrap(async(q,s)=>{const b=q.body;if(!b.nombre?.trim()||n(b.precio)<0||n(b.stock)<0)return s.status(400).json({error:'Datos de producto inválidos.'});const r=await pool.query('INSERT INTO productos(nombre,precio,stock,categoria,codigo) VALUES($1,$2,$3,$4,$5) RETURNING *',[b.nombre.trim(),n(b.precio),n(b.stock),b.categoria||'General',b.codigo||null]);s.status(201).json(r.rows[0])}));
-app.put('/api/productos/:id',admin,wrap(async(q,s)=>{const b=q.body;if(!b.nombre?.trim()||n(b.precio)<0||n(b.stock)<0)return s.status(400).json({error:'Datos inválidos.'});const r=await pool.query('UPDATE productos SET nombre=$1,precio=$2,stock=$3,categoria=$4,codigo=$5 WHERE id=$6 RETURNING *',[b.nombre.trim(),n(b.precio),n(b.stock),b.categoria||'General',b.codigo||null,q.params.id]);if(!r.rowCount)return s.status(404).json({error:'Producto no encontrado'});s.json(r.rows[0])}));
-app.delete('/api/productos/:id',admin,wrap(async(q,s)=>{const r=await pool.query('DELETE FROM productos WHERE id=$1',[q.params.id]);if(!r.rowCount)return s.status(404).json({error:'Producto no encontrado'});s.json({ok:true})}));
-app.post('/api/ventas',wrap(async(q,s)=>{const {datos={},total,usuario}=q.body,items=datos.carrito||[],type=datos.tipo||'contado';if(!items.length)return s.status(400).json({error:'Carrito vacío.'});const calc=items.reduce((a,x)=>a+n(x.precio)*n(x.cant),0);if(Math.round(calc)!==Math.round(n(total)))return s.status(400).json({error:'Total no coincide.'});if(type==='contado'){const p=datos.pagos||{},sum=n(p.efectivo)+n(p.nequi)+n(p.daviplata)+n(p.transferencia)+n(p.otros);if(Math.round(sum)!==Math.round(calc))return s.status(400).json({error:'Los medios de pago no suman el total.'})}const c=await pool.connect();try{await c.query('BEGIN');for(const x of items){const r=await c.query('SELECT stock FROM productos WHERE id=$1 FOR UPDATE',[x.id]);if(!r.rowCount||n(r.rows[0].stock)<n(x.cant))throw Error('Producto inexistente o inventario insuficiente: '+x.nombre)}if(type==='contado')for(const x of items)await c.query('UPDATE productos SET stock=stock-$1 WHERE id=$2',[n(x.cant),x.id]);const r=await c.query('INSERT INTO ventas(datos,total,usuario,estado) VALUES($1,$2,$3,$4) RETURNING id,datos,total,fecha,usuario,estado',[JSON.stringify(datos),calc,usuario||q.user.nombre,type==='apartado'?'apartado':type==='credito'?'credito':'registrada']);await c.query('COMMIT');s.status(201).json({ok:true,venta:r.rows[0],id:r.rows[0].id})}catch(e){await c.query('ROLLBACK');throw e}finally{c.release()}}));
-app.get('/api/ventas',wrap(async(q,s)=>{const r=q.query.fecha?await pool.query("SELECT * FROM ventas WHERE fecha >= $1::date AND fecha < ($1::date+INTERVAL '1 day') ORDER BY id DESC",[q.query.fecha]):await pool.query('SELECT * FROM ventas ORDER BY id DESC LIMIT 500');s.json(r.rows)}));
-app.get('/api/ventas/:id',wrap(async(q,s)=>{const r=await pool.query('SELECT * FROM ventas WHERE id=$1',[q.params.id]);if(!r.rowCount)return s.status(404).json({error:'Venta no encontrada'});s.json(r.rows[0])}));
-for(const [route,state] of [['apartados','apartado'],['creditos','credito']])app.get('/api/'+route,wrap(async(q,s)=>s.json((await pool.query('SELECT * FROM ventas WHERE estado=$1 ORDER BY fecha DESC',[state])).rows)));
-for(const table of ['clientes','proveedores']){app.get('/api/'+table,wrap(async(q,s)=>s.json((await pool.query(`SELECT * FROM ${table} ORDER BY nombre`)).rows)));app.post('/api/'+table,admin,wrap(async(q,s)=>{const b=q.body;if(!b.nombre?.trim())return s.status(400).json({error:'Nombre obligatorio.'});const r=await pool.query(`INSERT INTO ${table}(nombre,documento,telefono,direccion) VALUES($1,$2,$3,$4) RETURNING *`,[b.nombre.trim(),b.documento||'',b.telefono||'',b.direccion||'']);s.status(201).json(r.rows[0])}))}
-async function closeData(date){const r=await pool.query(`SELECT COUNT(*)::int cantidad,COALESCE(SUM(total),0) total,COALESCE(SUM(COALESCE((datos->'pagos'->>'efectivo')::numeric,0)),0) cash,COALESCE(SUM(COALESCE((datos->'pagos'->>'nequi')::numeric,0)),0) nequi,COALESCE(SUM(COALESCE((datos->'pagos'->>'daviplata')::numeric,0)),0) davi,COALESCE(SUM(COALESCE((datos->'pagos'->>'transferencia')::numeric,0)+COALESCE((datos->'pagos'->>'otros')::numeric,0)),0) other FROM ventas WHERE estado='registrada' AND fecha >= $1::date AND fecha < ($1::date+INTERVAL '1 day')`,[date]);const x=r.rows[0],cash=n(x.cash),nequi=n(x.nequi),davi=n(x.davi),other=n(x.other);return {cantidad_ventas:x.cantidad,total_ventas:n(x.total),efectivo_esperado:cash,base_inicial:0,saldo_esperado:cash,pagos:{efectivo:cash,nequi,daviplata:davi,transferencia:other},total_recibido:cash+nequi+davi+other}}
-app.get('/api/caja/resumen',admin,wrap(async(q,s)=>{if(!q.query.fecha)return s.status(400).json({error:'Fecha requerida.'});s.json(await closeData(q.query.fecha))}));
-app.post('/api/caja/cierre',admin,wrap(async(q,s)=>{const b=q.body;if(!b.fecha||n(b.efectivo_contado)<0||n(b.base_inicial)<0)return s.status(400).json({error:'Datos inválidos.'});const d=await closeData(b.fecha),diff=n(b.efectivo_contado)-(d.efectivo_esperado+n(b.base_inicial));try{const r=await pool.query(`INSERT INTO cierres_caja(fecha,total_ventas,efectivo,nequi,daviplata,otros,efectivo_contado,base_inicial,diferencia,observaciones,usuario) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,[b.fecha,d.total_ventas,d.pagos.efectivo,d.pagos.nequi,d.pagos.daviplata,d.pagos.transferencia,b.efectivo_contado,b.base_inicial,diff,b.observaciones||'',q.user.nombre]);s.status(201).json({ok:true,message:'Cierre guardado.',cierre:r.rows[0]})}catch(e){if(e.code==='23505')return s.status(409).json({error:'Ya existe cierre para esa fecha.'});throw e}}));
-app.get('/api/reportes/ventas',admin,wrap(async(q,s)=>{const {desde,hasta}=q.query;if(!desde||!hasta)return s.status(400).json({error:'Fechas requeridas.'});const r=await pool.query(`SELECT COUNT(*)::int cantidad,COALESCE(SUM(total),0) total,COALESCE(SUM((datos->'pagos'->>'efectivo')::numeric),0) cash,COALESCE(SUM((datos->'pagos'->>'nequi')::numeric),0) nequi,COALESCE(SUM((datos->'pagos'->>'daviplata')::numeric),0) davi,COALESCE(SUM((datos->'pagos'->>'transferencia')::numeric),0) other FROM ventas WHERE estado='registrada' AND fecha >= $1::date AND fecha < ($2::date+INTERVAL '1 day')`,[desde,hasta]);const x=r.rows[0],t=n(x.total);s.json({cantidad_ventas:x.cantidad,total_ventas:t,ticket_promedio:x.cantidad?t/x.cantidad:0,pagos:{efectivo:n(x.cash),nequi:n(x.nequi),daviplata:n(x.davi),transferencia:n(x.other)}})}));
-app.get('/',(q,s)=>s.sendFile(path.join(__dirname,'index.html')));
-app.use((e,q,s,next)=>{console.error(e);s.status(e.code==='23505'?409:400).json({error:e.message||'Error del servidor'})});
-init().then(()=>app.listen(PORT,()=>console.log('POS iniciado en '+PORT))).catch(e=>{console.error(e);process.exit(1)});
+init();
+
+app.post('/api/login', async (req,res)=>{
+  try{
+    const {nombre,pin}=req.body;
+    let r;
+    try{
+      r=await pool.query("SELECT * FROM usuarios WHERE LOWER(nombre)=LOWER($1) AND pin=$2",[nombre.trim(),pin.trim()]);
+    }catch(e){
+      // Si falla por pin no existe, busca sin pin y crea
+      r=await pool.query("SELECT * FROM usuarios WHERE LOWER(nombre)=LOWER($1)",[nombre.trim()]);
+      if(r.rows.length===0){
+        await pool.query("INSERT INTO usuarios(nombre,pin,rol) VALUES($1,$2,'admin')",[nombre.trim(),pin.trim()]);
+        r=await pool.query("SELECT * FROM usuarios WHERE LOWER(nombre)=LOWER($1)",[nombre.trim()]);
+      }
+    }
+    if(r.rows.length===0) return res.status(401).json({error:'Usuario o PIN incorrecto'});
+    if(r.rows[0].pin && r.rows[0].pin!==pin.trim()) return res.status(401).json({error:'PIN incorrecto'});
+    res.json({usuario:r.rows[0]});
+  }catch(e){ res.status(500).json({error:e.message}) }
+});
+
+app.get('/api/usuarios', async (req,res)=>{ const r=await pool.query("SELECT id,nombre,rol,activo FROM usuarios ORDER BY id"); res.json(r.rows); });
+app.post('/api/usuarios', async (req,res)=>{ try{const {nombre,pin,rol}=req.body; const r=await pool.query("INSERT INTO usuarios(nombre,pin,rol) VALUES($1,$2,$3) RETURNING *",[nombre.trim(),pin.trim(),rol||'vendedor']); res.json(r.rows[0]);}catch(e){res.status(400).json({error:'Usuario ya existe'})} });
+app.put('/api/usuarios/:id', async (req,res)=>{ const {nombre,pin,rol,activo}=req.body; const r=await pool.query("UPDATE usuarios SET nombre=COALESCE($1,nombre), pin=COALESCE($2,pin), rol=COALESCE($3,rol), activo=COALESCE($4,activo) WHERE id=$5 RETURNING *",[nombre,pin,rol,activo,req.params.id]); res.json(r.rows[0]); });
+app.post('/api/usuarios/cambiar-password', async (req,res)=>{ const {id,pin_nuevo}=req.body; await pool.query("UPDATE usuarios SET pin=$1 WHERE id=$2",[pin_nuevo,id]); res.json({ok:true}); });
+app.get('/api/productos', async (req,res)=>{ const r=await pool.query("SELECT * FROM productos ORDER BY id DESC"); res.json(r.rows); });
+app.post('/api/productos', async (req,res)=>{ const {nombre,codigo,categoria,precio,stock}=req.body; const r=await pool.query("INSERT INTO productos(nombre,codigo,categoria,precio,stock) VALUES($1,$2,$3,$4,$5) RETURNING *",[nombre,codigo,categoria,precio,stock]); res.json(r.rows[0]); });
+app.put('/api/productos/:id', async (req,res)=>{ const {nombre,codigo,categoria,precio,stock}=req.body; const r=await pool.query("UPDATE productos SET nombre=$1,codigo=$2,categoria=$3,precio=$4,stock=$5 WHERE id=$6 RETURNING *",[nombre,codigo,categoria,precio,stock,req.params.id]); res.json(r.rows[0]); });
+app.delete('/api/productos/:id', async (req,res)=>{ await pool.query("DELETE FROM productos WHERE id=$1",[req.params.id]); res.json({ok:true}); });
+app.get('/api/clientes', async (req,res)=>{ const r=await pool.query("SELECT * FROM clientes ORDER BY id DESC"); res.json(r.rows); });
+app.post('/api/clientes', async (req,res)=>{ const {nombre,documento,telefono,direccion}=req.body; const r=await pool.query("INSERT INTO clientes(nombre,documento,telefono,direccion) VALUES($1,$2,$3,$4) RETURNING *",[nombre,documento,telefono,direccion]); res.json(r.rows[0]); });
+app.get('/api/proveedores', async (req,res)=>{ const r=await pool.query("SELECT * FROM proveedores ORDER BY id DESC"); res.json(r.rows); });
+app.post('/api/proveedores', async (req,res)=>{ const {nombre,documento,telefono,direccion}=req.body; const r=await pool.query("INSERT INTO proveedores(nombre,documento,telefono,direccion) VALUES($1,$2,$3,$4) RETURNING *",[nombre,documento,telefono,direccion]); res.json(r.rows[0]); });
+app.get('/api/ventas', async (req,res)=>{ const {fecha}=req.query; const r= fecha? await pool.query("SELECT * FROM ventas WHERE DATE(fecha)=$1 ORDER BY id DESC",[fecha]) : await pool.query("SELECT * FROM ventas ORDER BY id DESC LIMIT 200"); res.json(r.rows); });
+app.get('/api/ventas/:id', async (req,res)=>{ const r=await pool.query("SELECT * FROM ventas WHERE id=$1",[req.params.id]); res.json(r.rows[0]); });
+app.post('/api/ventas', async (req,res)=>{ const {datos,total,usuario,fecha}=req.body; const carrito=datos?.carrito||[]; for(const item of carrito){ if(item.id) await pool.query("UPDATE productos SET stock=GREATEST(0,stock-$1) WHERE id=$2",[Number(item.cant)||1,item.id]); } const r=await pool.query("INSERT INTO ventas(datos,total,usuario,cliente,tipo,pagos,fecha) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *",[JSON.stringify(datos),total||0,usuario||'',datos?.cliente||'Mostrador',datos?.tipo||'contado',datos?.pagos?JSON.stringify(datos.pagos):null,fecha||new Date()]); res.json({ok:true, venta:r.rows[0]}); });
+app.get('/api/apartados', async (req,res)=>{ const r=await pool.query("SELECT * FROM ventas WHERE tipo='apartado' ORDER BY id DESC"); res.json(r.rows); });
+app.get('/api/creditos', async (req,res)=>{ const r=await pool.query("SELECT * FROM ventas WHERE tipo='credito' ORDER BY id DESC"); res.json(r.rows); });
+app.get('/api/caja/resumen', async (req,res)=>{ const fecha=req.query.fecha||new Date().toISOString().slice(0,10); const ventas=await pool.query("SELECT * FROM ventas WHERE DATE(fecha)=$1 AND tipo='contado'",[fecha]); let pagos={efectivo:0,nequi:0,daviplata:0,transferencia:0}, total=0; for(const v of ventas.rows){ total+=Number(v.total)||0; let p=v.pagos; if(typeof p==='string') try{p=JSON.parse(p)}catch{}; if(p){pagos.efectivo+=Number(p.efectivo)||0; pagos.nequi+=Number(p.nequi)||0; pagos.daviplata+=Number(p.daviplata)||0; pagos.transferencia+=Number(p.transferencia)||0;} else pagos.efectivo+=Number(v.total)||0; } res.json({fecha,total_ventas:total,pagos,total_recibido:Object.values(pagos).reduce((a,b)=>a+b,0),base_inicial:0,efectivo_esperado:pagos.efectivo,saldo_esperado:pagos.efectivo,cantidad_ventas:ventas.rows.length}); });
+app.post('/api/caja/cierre', async (req,res)=>{ const {fecha,efectivo_contado,base_inicial,observaciones,usuario}=req.body; const f=fecha||new Date().toISOString().slice(0,10); const ventas=await pool.query("SELECT * FROM ventas WHERE DATE(fecha)=$1",[f]); let pagos={efectivo:0,nequi:0,daviplata:0,transferencia:0}, total=0; for(const v of ventas.rows){total+=Number(v.total)||0;} const r=await pool.query(`INSERT INTO cierres(fecha,usuario,base_inicial,efectivo_esperado,efectivo_contado,total_ventas,pagos,observaciones) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(fecha) DO UPDATE SET efectivo_contado=$5, observaciones=$8 RETURNING *`,[f,usuario,base_inicial||0,total,efectivo_contado||0,total,JSON.stringify(pagos),observaciones]); res.json({ok:true,cierre:r.rows[0]}); });
+app.get('/api/reportes/ventas', async (req,res)=>{ const {desde,hasta}=req.query; const r=await pool.query("SELECT * FROM ventas WHERE DATE(fecha) BETWEEN $1 AND $2",[desde,hasta]); let total=0; for(const v of r.rows) total+=Number(v.total)||0; res.json({total_ventas:total,cantidad_ventas:r.rows.length,ticket_promedio:r.rows.length?total/r.rows.length:0,pagos:{}}); });
+app.get('/',(req,res)=>res.sendFile(path.join(__dirname,'index.html')));
+app.listen(process.env.PORT||3000,()=>console.log('V15.2 listo'));
