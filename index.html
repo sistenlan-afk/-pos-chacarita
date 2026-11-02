@@ -244,7 +244,7 @@ const $id = id => document.getElementById(id);
    1. USUARIOS Y PERMISOS (sin cambios de lógica)
    ===================================================================== */
 let usuarios = cargar('v14_users', []);
-if (usuarios.length === 0) usuarios = [{id:1,nombre:"Diana",pin_hash:hashPin("1234"),rol:"Administrador"},{id:2,nombre:"Carlos",pin_hash:hashPin("0000"),rol:"Cajero"}];
+if (usuarios.length === 0) usuarios = [{id:1,nombre:"Diana",pin_hash:hashPin("9999"),rol:"Administrador"},{id:2,nombre:"Carlos",pin_hash:hashPin("1111"),rol:"Cajero"}];
 let sesionActual = cargar('v14_sesion', null);
 function hashPin(pin){ let h=0; for(let i=0;i<pin.length;i++){ h=((h<<5)-h)+pin.charCodeAt(i); h|=0; } return String(h); }
 function saveUsers(){ localStorage.setItem('v14_users', JSON.stringify(usuarios)); renderUsuariosLogin(); }
