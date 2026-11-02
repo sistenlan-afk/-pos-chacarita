@@ -54,21 +54,54 @@ td{padding:6px;border-bottom:1px solid #eee;text-align:center}
 <body>
 <div id="alerta" class="alerta"></div>
 
-<div id="loginScreen" class="login-screen">
-<h2>COSMETICO MAIA</h2><p>Ingrese PIN de 4 dígitos</p>
-<input id="pinInput" type="password" maxlength="4" placeholder="****" style="text-align:center;font-size:28px;letter-spacing:8px;width:100px" readonly>
-<div class="keypad">
-<button onclick="pressKey('1')">1</button><button onclick="pressKey('2')">2</button><button onclick="pressKey('3')">3</button>
-<button onclick="pressKey('4')">4</button><button onclick="pressKey('5')">5</button><button onclick="pressKey('6')">6</button>
-<button onclick="pressKey('7')">7</button><button onclick="pressKey('8')">8</button><button onclick="pressKey('9')">9</button>
-<button onclick="clearPin()">C</button><button onclick="pressKey('0')">0</button><button onclick="clearPin()">⌫</button>
-</div>
-<small style="margin-top:12px"> Admin Diana 1234 / Cajero Carlos 0000</small>
-<div style="margin-top:20px;width:100%;max-width:150px"><b>----</b><br>
-<input id="newUserName" placeholder="Nombre"><input id="newUserPin" placeholder="PIN 4 dígitos" maxlength="4">
-<select id="newUserRol"><option value="Cajero">Cajero</option><option value="Administrador">Administrador</option></select>
-<button class="btn btn-F6" style="width:100%;margin-top:6px" onclick="crearUsuario()">Crear Usuario</button>
-<div id="listaUsuariosLogin" style="margin-top:10px;text-align:left"></div></div>
+<div id="loginScreen" class="login-screen" style="display:flex;flex-direction:column;align-items:center;padding:24px 16px;background:linear-gradient(180deg,#fff0f4,#fff);min-height:100vh">
+
+  <div style="text-align:center;margin-bottom:6px">
+    <div style="font-size:28px">💄</div>
+    <h2 style="margin:4px 0;color:#a81d48;font-weight:900;letter-spacing:1px;font-size:22px">COSMETICO MAIA</h2>
+    <p style="margin:0;color:#666;font-size:13px">Ingrese PIN de 4 dígitos</p>
+  </div>
+
+  <input id="pinInput" type="password" maxlength="4" placeholder="****" readonly style="text-align:center;font-size:28px;letter-spacing:8px;width:100%;max-width:220px;padding:12px;border:2px solid #e891a8;border-radius:14px;color:#a81d48;background:#fff;box-shadow:0 4px 12px rgba(232,145,168,.2)">
+
+  <div class="keypad" style="display:grid;grid-template-columns:repeat(3, 68px);gap:12px;justify-content:center;margin:20px 0;width:100%;max-width:280px">
+    <button onclick="pressKey('1')">1</button><button onclick="pressKey('2')">2</button><button onclick="pressKey('3')">3</button>
+    <button onclick="pressKey('4')">4</button><button onclick="pressKey('5')">5</button><button onclick="pressKey('6')">6</button>
+    <button onclick="pressKey('7')">7</button><button onclick="pressKey('8')">8</button><button onclick="pressKey('9')">9</button>
+    <button onclick="clearPin()" style="background:#9aa0a6">C</button><button onclick="pressKey('0')" style="background:#fff;color:#d16a8a;border:2px solid #e891a8">0</button><button onclick="clearPin()" style="background:#d16a8a">⌫</button>
+  </div>
+
+  <style>
+    .keypad button{
+      background:linear-gradient(180deg,#e891a8,#d16a8a);
+      color:#fff;border:0;border-radius:50%;width:68px;height:68px;
+      font-size:24px;font-weight:800;cursor:pointer;
+      box-shadow:0 4px 10px rgba(209,106,138,.4);
+    }
+    .keypad button:active{ transform:scale(0.92); }
+  </style>
+
+  <!-- BOTON QUE ABRE GESTION -->
+  <button onclick="document.getElementById('panelAdmin').style.display='block'" style="margin-top:8px;background:#f1f1f1;border:1px solid #ddd;border-radius:20px;padding:7px 16px;font-size:12px;color:#555;cursor:pointer">⚙️ Gestión Admin</button>
+
+  <!-- PANEL OCULTO - AQUI YA NO SE VEN LOS USUARIOS -->
+  <div id="panelAdmin" style="display:none;width:100%;max-width:300px;margin-top:16px;background:#fff;border:1px solid #f0c2cf;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.08)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <b style="font-size:13px;color:#a81d48">Gestión Usuarios</b>
+      <button onclick="document.getElementById('panelAdmin').style.display='none'" style="border:0;background:#f0f0f0;border-radius:50%;width:24px;height:24px;cursor:pointer">✕</button>
+    </div>
+    <input id="newUserName" placeholder="Nombre" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;margin-bottom:8px">
+    <input id="newUserPin" placeholder="PIN 4 dígitos" maxlength="4" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;margin-bottom:8px">
+    <select id="newUserRol" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;margin-bottom:12px;background:#f5f5f5">
+      <option value="Cajero">Cajero</option>
+      <option value="Administrador">Administrador</option>
+    </select>
+    <button class="btn btn-f6" style="width:100%;background:#a81d48;color:#fff;border:0;border-radius:10px;padding:12px;font-weight:700" onclick="crearUsuario()">Crear Usuario</button>
+
+    <!-- LISTA OCULTA PARA QUE NO SE VEAN -->
+    <div id="listaUsuariosLogin" style="display:none"></div>
+  </div>
+
 </div>
 
 <div id="ticketPrint"></div>
