@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V17 POS - Caja, apartados y nube</title>
+<style>
+:root{--vino:#7a1230}
+*{box-sizing:border-box;font-family:system-ui}
+body{margin:0;background:#f2f2f2}
+.header{background:var(--vino);color:#fff;padding:8px;text-align:center;position:sticky;top:0;z-index:10}
+.topbar{display:flex;flex-wrap:wrap;gap:5px;padding:8px;background:#fff;border-bottom:3px solid var(--vino)}
+.btn{border:none;border-radius:8px;padding:10px 12px;font-weight:700;color:#fff;cursor:pointer;font-size:11px}
+.btn-F6{background:#0d6efd}.btn-F9{background:#6f42c1}.btn-F10{background:#ff8c00}
+.btn-BASE{background:#6f42c1}.btn-PROV{background:#20c997;color:#000}.btn-PAGO{background:#fd7e14}
+.btn-DEV{background:#dc3545}.btn-GASTO{background:#6c757d}.btn-CIERRE{background:#c00}
+.btn-IMPRIMIR{background:#000}.btn-AGREGAR{background:#8a2be2}.btn-COBRAR{background:#198754}
+.btn-APARTAR{background:#0d6efd}.btn-X{background:#343a40}
+.btn-APARTADOS{background:#0aa2c0}   /* NUEVO: mismo estilo base .btn que BASE/Proveedores/Gasto */
+.btn:disabled{opacity:.3;pointer-events:none}
+.card{background:#fff;border-radius:10px;padding:10px;margin:8px}
+input,select{width:100%;padding:11px;border:1px solid #ccc;border-radius:8px;margin:5px 0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#eee;padding:6px}
+td{padding:6px;border-bottom:1px solid #eee;text-align:center}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100;padding:12px}
+.modal.show{display:flex}
+.modal-box{background:#fff;width:100%;max-width:520px;border-radius:14px;padding:16px;max-height:92vh;overflow:auto}
+.modal-box.wide{max-width:980px}
+.total-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:4px solid var(--vino);padding:10px;z-index:15}
+.login-screen{position:fixed;inset:0;background:#fff;z-index:200;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:20px}
+.keypad{display:grid;grid-template-columns:repeat(3,70px);gap:10px;margin-top:12px}
+.keypad button{height:60px;font-size:22px;font-weight:700;border-radius:12px;border:2px solid #ddd;background:#f9f9f9}
+.alerta{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#ff3b30;color:#fff;padding:12px 18px;border-radius:10px;z-index:300;display:none}
+
+/* ===== 1. INDICADOR DE CONEXIÓN A RENDER (verde / rojo / gris) ===== */
+.status-pill{display:inline-flex;align-items:center;gap:6px;background:#fff;padding:3px 10px;border-radius:14px;font-size:11px;font-weight:700;color:#6c757d}
+.status-dot{width:12px;height:12px;border-radius:50%;display:inline-block;background:#adb5bd}
+.status-pill.on{color:#198754}.status-pill.on .status-dot{background:#00c853;box-shadow:0 0 6px #00c853}
+.status-pill.off{color:#dc3545}.status-pill.off .status-dot{background:#e00;box-shadow:0 0 6px #e00}
+
+.tag{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;color:#fff}
+.tag-pend{background:#fd7e14}.tag-fin{background:#198754}
+
+/* Ticket oculto siempre, solo visible al imprimir */
+#ticketPrint{display:none;padding:10px;font-family:monospace;font-size:13px;background:#fff}
+@media print{
+  body *{visibility:hidden}
+  #ticketPrint{display:block !important;visibility:visible;position:absolute;left:0;top:0;width:80mm}
+  #ticketPrint *{visibility:visible}
+}
+</style>
+</head>
+<body>
+<div id="alerta" class="alerta"></div>
+
+<div id="loginScreen" class="login-screen">
+<h2>CHACARITA ARATOCA</h2><p>Ingrese PIN de 4 dígitos</p>
+<input id="pinInput" type="password" maxlength="4" placeholder="****" style="text-align:center;font-size:28px;letter-spacing:8px;width:200px" readonly>
+<div class="keypad">
+<button onclick="pressKey('1')">1</button><button onclick="pressKey('2')">2</button><button onclick="pressKey('3')">3</button>
+<button onclick="pressKey('4')">4</button><button onclick="pressKey('5')">5</button><button onclick="pressKey('6')">6</button>
+<button onclick="pressKey('7')">7</button><button onclick="pressKey('8')">8</button><button onclick="pressKey('9')">9</button>
+<button onclick="clearPin()">C</button><button onclick="pressKey('0')">0</button><button onclick="clearPin()">⌫</button>
+</div>
+<small style="margin-top:12px">Demo: Admin Diana 1234 / Cajero Carlos 0000</small>
+<div style="margin-top:20px;width:100%;max-width:300px"><b>Gestión Usuarios (Solo Admin)</b><br>
+<input id="newUserName" placeholder="Nombre"><input id="newUserPin" placeholder="PIN 4 dígitos" maxlength="4">
+<select id="newUserRol"><option value="Cajero">Cajero</option><option value="Administrador">Administrador</option></select>
+<button class="btn btn-F6" style="width:100%;margin-top:6px" onclick="crearUsuario()">Crear Usuario</button>
+<div id="listaUsuariosLogin" style="margin-top:10px;text-align:left"></div></div>
+</div>
+
+<div id="ticketPrint"></div>
+
+<!-- ===== HEADER: indicador dinámico de conexión (1) · botón rosa de prueba ELIMINADO (6) ===== -->
+<div class="header">
+<span id="infoHeader">Cargando...</span>
+<span id="statusPill" class="status-pill"><span id="statusDot" class="status-dot"></span><span id="statusTxt">Verificando Render...</span></span><br>
+<button class="btn btn-X" onclick="logout()" style="padding:4px 8px;margin-top:6px">Salir PIN</button>
+</div>
+
+<div class="topbar">
+<button class="btn btn-F6" onclick="abrirCliente()">Cliente F6</button>
+<button class="btn btn-F9" id="btnEntrada" onclick="verificarPermiso('ENTRADA', abrirEntrada)">Entrada F9</button>
+<button class="btn btn-F10" onclick="abrirSalida()">Salida F10</button>
+<button class="btn btn-BASE" id="btnBase" onclick="verificarPermiso('BASE', abrirBase)">BASE</button>
+<button class="btn btn-PROV" onclick="abrirProveedores()">Proveedores</button>
+<button class="btn btn-PAGO" id="btnPago" onclick="verificarPermiso('PAGO', abrirPagoProv)">Pago Prov</button>
+<button class="btn btn-DEV" onclick="abrirDevol()">Devol Venc</button>
+<button class="btn btn-GASTO" id="btnGasto" onclick="verificarPermiso('GASTO', abrirGasto)">Gasto</button>
+<button class="btn btn-APARTADOS" onclick="abrirApartados()">VER APARTADOS</button>
+<button class="btn btn-IMPRIMIR" onclick="abrirImprimir()">🖨️ IMPRIMIR</button>
+<button class="btn btn-CIERRE" onclick="abrirCierre()">CIERRE F8</button>
+</div>
+
+<div style="padding-bottom:230px"><div class="card">
+<div style="display:flex;gap:6px">
+<input id="codigoInput" placeholder="labiales, 001, arroz..." onkeydown="if(event.key==='Enter') accionAgregar()">
+<button class="btn btn-AGREGAR" onclick="accionAgregar()">AGREGAR</button>
+<button class="btn btn-X" onclick="quitarUltimo()">X</button>
+</div>
+<table><thead><tr><th>Nombre</th><th>Codigo</th><th>Stock</th><th>Precio</th><th>Cant</th><th>Sub</th></tr></thead><tbody id="tbodyVenta"></tbody></table>
+</div></div>
+
+<div class="total-bar">
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<b>TOTAL: <span id="totalTxt" style="color:#ff0a54;font-size:22px">$ 0</span></b>
+Metodo:
+<select id="metodoPago" style="width:110px" onchange="calcVuelto()">
+<option>Efectivo</option><option>Tarjeta</option><option>NEQUI</option><option>DAVIPLATA</option><option>COMBINADO</option>
+</select>
+<!-- Solo visible si el método es COMBINADO: indica con qué medio digital se paga el resto -->
+<select id="metodoDigital" style="width:110px;display:none" onchange="calcVuelto()">
+<option>NEQUI</option><option>TARJETA</option><option>DAVIPLATA</option>
+</select>
+Efectivo:<input id="efectivoInput" type="number" style="width:90px" oninput="calcVuelto()">
+<span id="digitalTxt" style="background:#cfe2ff;padding:4px 8px;border-radius:6px;display:none"></span>
+<span id="vueltoTxt" style="background:#d4edda;padding:4px 8px;border-radius:6px">Vuelto: $0</span>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+<button class="btn btn-COBRAR" style="padding:14px" onclick="accionCobrar()">COBRAR F1</button>
+<button class="btn btn-APARTAR" style="padding:14px" onclick="accionApartar()">APARTAR</button>
+</div>
+<small id="resumenDia"></small>
+</div>
+
+<div id="modalImprimir" class="modal"><div class="modal-box"><h3>🖨️ Imprimir - Doble Función</h3>
+<button class="btn btn-IMPRIMIR" style="width:100%;padding:12px" onclick="imprimirActual()">1. IMPRIMIR FACTURA ACTUAL</button><hr>
+<b>2. Factura Guardada</b><input id="buscarFactura" placeholder="Buscar # o cliente" oninput="filtrarFacturasGuardadas()">
+<div id="listaFacturasGuardadas" style="max-height:200px;overflow:auto;border:1px solid #eee;padding:4px"></div>
+<button class="btn btn-X" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button></div></div>
+
+<div id="modalCliente" class="modal"><div class="modal-box"><h3>Cliente F6</h3>
+<input id="clienteBuscar" placeholder="Buscar" oninput="filtrarClientes()">
+<div id="listaClientes" style="max-height:100px;overflow:auto;border:1px solid #eee"></div>
+<input id="cliNombre" placeholder="Nombre"><input id="cliDoc" placeholder="Doc">
+<button class="btn btn-F6" style="width:100%" onclick="guardarCliente()">Guardar</button>
+<button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
+
+<div id="modalEntrada" class="modal"><div class="modal-box"><h3>Entrada F9 - Requiere Admin</h3>
+<select id="entProveedor"></select><input id="entFactura" placeholder="Factura"><input id="entCodigo" placeholder="Codigo">
+<input id="entCant" type="number" placeholder="Cant"><input id="entCosto" type="number" placeholder="Costo">
+<input id="entPrecio" type="number" placeholder="Precio Venta"><input id="entVenc" type="date">
+<button class="btn btn-F9" style="width:100%" onclick="guardarEntrada()">Guardar</button>
+<button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
+
+<div id="modalSalida" class="modal"><div class="modal-box"><h3>Salida F10</h3>
+<input id="salCodigo" placeholder="Codigo"><input id="salCant" type="number" placeholder="Cant"><input id="salMotivo" placeholder="Motivo">
+<button class="btn btn-F10" style="width:100%" onclick="guardarSalida()">Restar</button>
+<button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
+
+<div id="modalBase" class="modal"><div class="modal-box"><h3>BASE - Requiere Admin</h3>
+<input id="baseInput" type="number" placeholder="50000">
+<button class="btn btn-BASE" style="width:100%" onclick="guardarBase()">Guardar BASE</button>
+<button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
+
+<div id="modalProveedores" class="modal"><div class="modal-box"><h3>Proveedores</h3>
+<input id="provNombre" placeholder="Nombre"><input id="provNit" placeholder="NIT"><input id="provTel" placeholder="Tel"><input id="provAsesor" placeholder="Asesor">
+<button class="btn btn-PROV" style="width:100%" onclick="guardarProveedor()">Guardar</button>
+<input id="provBuscar" placeholder="Buscar" oninput="renderProveedores()"><div id="listaProv"></div>
+<button class="btn btn-X" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button></div></div>
+
+<div id="modalPagoProv" class="modal"><div class="modal-box"><h3>Pago Prov - Requiere Admin</h3>
+<select id="pagoProvSelect" onchange="cargarFacturas()"></select>
+<div id="boxFacturas" style="border:1px solid #eee;padding:6px;max-height:120px;overflow:auto"></div>
+<input id="pagoValor" type="number" placeholder="Monto">
+<button class="btn btn-PAGO" style="width:100%" onclick="guardarPagoProv()">Pagar</button>
+<button class="btn btn-X" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button></div></div>
+
+<div id="modalDevol" class="modal"><div class="modal-box"><h3>Devol Venc</h3>
+<input id="devoCodigo" placeholder="Codigo" oninput="buscarDevo()"><div id="devoInfo" style="background:#fff3cd;padding:6px">Info</div>
+<input id="devoCant" type="number" placeholder="Cant"><select id="devoProv"></select>
+<button class="btn btn-DEV" style="width:100%" onclick="guardarDevol()">Registrar</button>
+<button class="btn btn-X" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button></div></div>
+
+<div id="modalGasto" class="modal"><div class="modal-box"><h3>Gasto - Requiere Admin</h3>
+<input id="gastoValor" type="number" placeholder="Monto"><input id="gastoConcepto" placeholder="Concepto">
+<button class="btn btn-GASTO" style="width:100%" onclick="guardarGasto()">Registrar</button>
+<button class="btn btn-X" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button></div></div>
+
+<div id="modalCierre" class="modal"><div class="modal-box"><h3>CIERRE F8</h3>
+<div id="cierreDetalle" style="background:#f8f9fa;padding:12px;border-radius:10px"></div>
+<button class="btn btn-CIERRE" style="width:100%;margin-top:8px" onclick="hacerCierre()">CERRAR TURNO Y BLOQUEAR</button>
+<button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
+
+<div id="modalAuthAdmin" class="modal"><div class="modal-box"><h3>🔒 Requiere PIN Administrador</h3>
+<input id="authPin" type="password" maxlength="4" placeholder="****" style="text-align:center;font-size:24px;letter-spacing:6px">
+<button class="btn btn-CIERRE" style="width:100%" onclick="autorizarAdmin()">Autorizar</button>
+<button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cancelar</button></div></div>
+
+<script>
+/* =====================================================================
+   0. UTILIDADES
+   ===================================================================== */
+const fmt = n => '$' + (Number(n) || 0).toLocaleString('es-CO');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cargar = (k, def) => { try { const v = localStorage.getItem(k); return v === null ? def : JSON.parse(v); } catch (e) { return def; } };
+const $id = id => document.getElementById(id);
+
+/* =====================================================================
+   1. USUARIOS Y PERMISOS (sin cambios de lógica)
+   ===================================================================== */
+let usuarios = cargar('v14_users', []);
+if (usuarios.length === 0) usuarios = [{id:1,nombre:"Diana",pin_hash:hashPin("1234"),rol:"Administrador"},{id:2,nombre:"Carlos",pin_hash:hashPin("0000"),rol:"Cajero"}];
+let sesionActual = cargar('v14_sesion', null);
+function hashPin(pin){ let h=0; for(let i=0;i<pin.length;i++){ h=((h<<5)-h)+pin.charCodeAt(i); h|=0; } return String(h); }
+function saveUsers(){ localStorage.setItem('v14_users', JSON.stringify(usuarios)); renderUsuariosLogin(); }
+function pressKey(n){ const inp=$id('pinInput'); if(inp.value.length<4){ inp.value+=n; if(inp.value.length===4) setTimeout(validarPin,200); } }
+function clearPin(){ $id('pinInput').value=''; }
+function validarPin(){
+  const pin=$id('pinInput').value; if(pin.length!==4) return;
+  const user=usuarios.find(u=>u.pin_hash===hashPin(pin));
+  if(user){
+    sesionActual=user; localStorage.setItem('v14_sesion',JSON.stringify(user));
+    $id('loginScreen').style.display='none'; clearPin(); actualizarHeader(); aplicarPermisosPorRol();
+    mostrarAlerta(`Bienvenido ${user.nombre} - ${user.rol}`,"#198754");
+  } else { mostrarAlerta("PIN Incorrecto. Intente de nuevo"); clearPin(); }
+}
+function logout(){ sesionActual=null; localStorage.removeItem('v14_sesion'); $id('loginScreen').style.display='flex'; }
+function crearUsuario(){
+  const nombre=$id('newUserName').value.trim(), pin=$id('newUserPin').value.trim(), rol=$id('newUserRol').value;
+  if(!nombre||pin.length!==4) return alert("Nombre y PIN 4 dígitos");
+  if(sesionActual && sesionActual.rol!=="Administrador") return alert("Solo Admin");
+  usuarios.push({id:Date.now(),nombre,pin_hash:hashPin(pin),rol}); saveUsers();
+  $id('newUserName').value=''; $id('newUserPin').value='';
+}
+function renderUsuariosLogin(){
+  $id('listaUsuariosLogin').innerHTML=usuarios.map(u=>`<div style="border:1px solid #ddd;padding:4px;margin:2px"><b>${esc(u.nombre)}</b> ${esc(u.rol)} <button onclick="borrarUsuario(${u.id})">X</button></div>`).join('');
+}
+function borrarUsuario(id){
+  if(sesionActual?.rol!=="Administrador") return alert("Solo Admin");
+  if(!confirm("Borrar?")) return; usuarios=usuarios.filter(u=>u.id!==id); saveUsers();
+}
+let accionPendiente=null;
+function aplicarPermisosPorRol(){
+  if(!sesionActual) return; const esAdmin=sesionActual.rol==="Administrador";
+  ['btnBase','btnEntrada','btnGasto','btnPago'].forEach(id=>$id(id).disabled=!esAdmin);
+}
+function verificarPermiso(tipo, fn){
+  if(!sesionActual) return;
+  if(sesionActual.rol==="Administrador") fn();
+  else { accionPendiente=fn; $id('modalAuthAdmin').classList.add('show'); $id('authPin').value=''; }
+}
+function autorizarAdmin(){
+  const pin=$id('authPin').value; if(pin.length!==4) return;
+  const user=usuarios.find(u=>u.pin_hash===hashPin(pin) && u.rol==="Administrador");
+  if(user){ cerrarModales(); if(accionPendiente) accionPendiente(); accionPendiente=null; mostrarAlerta(`Autorizado por ${user.nombre}`,"#198754"); }
+  else mostrarAlerta("PIN Admin Incorrecto");
+}
+
+/* =====================================================================
+   2. DATOS GLOBALES
+   ===================================================================== */
+let productos=cargar('v14_prod',[]), proveedores=cargar('v14_prov',[]);
+let clientes=cargar('v14_cli',[{nombre:"Cliente Mostrador",doc:"000"}]);
+let facturasCompra=cargar('v14_fact',[]), facturasVenta=cargar('v14_factVenta',[]);
+let pagosProv=cargar('v14_pagos',[]), gastos=cargar('v14_gastos',[]), devoluciones=cargar('v14_devo',[]);
+let carrito=[], consecutivo=cargar('v14_consecutivo',234);
+let base=cargar('v14_base',{valor:0});
+let clienteActual={nombre:"Cliente Mostrador",doc:"000"};
+let ventasPendientesSubir=cargar('v14_pendientes',[]);
+const configNegocio={nombre:"CHACARITA ARATOCA",nit:"NIT 900123456-7",dir:"Aratoca - Santander",tel:"310 123 4567",frase:"Señor Jesucristo Bendice Este Negocio"};
+
+/* ---- (5) ESTADO UNIFICADO DE CAJA ----
+   total              = ventas reconocidas del día (un apartado entra completo SOLO al finalizar)
+   efectivo           = efectivo físico NETO de ventas (ya descontado el vuelto)
+   digital            = ventas por Tarjeta / NEQUI / DAVIPLATA (NO entran al cajón)
+   anticiposEfectivo  = abonos/anticipos de apartados recibidos en efectivo
+   anticiposDigital   = abonos/anticipos de apartados recibidos por medio digital (NO entran al cajón) */
+const DIGITALES=['TARJETA','NEQUI','DAVIPLATA'];
+const cajaVacia=()=>({total:0,efectivo:0,digital:{TARJETA:0,NEQUI:0,DAVIPLATA:0},anticiposEfectivo:0,anticiposDigital:{TARJETA:0,NEQUI:0,DAVIPLATA:0}});
+function normalizarCaja(c){   // compatible con el formato viejo {total, efectivo}
+  const b=cajaVacia(); if(!c) return b;
+  b.total=+c.total||0; b.efectivo=+c.efectivo||0; b.anticiposEfectivo=+c.anticiposEfectivo||0;
+  DIGITALES.forEach(k=>{ b.digital[k]=+(c.digital&&c.digital[k])||0; b.anticiposDigital[k]=+(c.anticiposDigital&&c.anticiposDigital[k])||0; });
+  return b;
+}
+let ventasDia=normalizarCaja(cargar('v14_ventas',null));
+
+function saveAll(){
+  const g={v14_prod:productos,v14_prov:proveedores,v14_cli:clientes,v14_fact:facturasCompra,v14_factVenta:facturasVenta,
+    v14_pagos:pagosProv,v14_gastos:gastos,v14_devo:devoluciones,v14_ventas:ventasDia,v14_base:base,
+    v14_consecutivo:consecutivo,v14_pendientes:ventasPendientesSubir};
+  Object.keys(g).forEach(k=>localStorage.setItem(k,JSON.stringify(g[k])));
+  actualizarHeader(); renderSelects();
+  programarSync();      // guarda también en la base de datos de Render (en segundo plano)
+}
+
+/* =====================================================================
+   3. (5) CONTROL UNIFICADO DE CAJA: BASE + PAGO PROV + GASTOS + VENTAS + ANTICIPOS
+   Única fuente de verdad: la usan el header, el cierre F8 y las advertencias de egresos.
+   Efectivo Esperado = Base + Ventas Efectivo Físico + Abonos/Anticipos (efectivo) - Pagos Prov - Gastos
+   Los pagos digitales se reportan aparte y NUNCA se suman al efectivo esperado.
+   ===================================================================== */
+function calcularCaja(){
+  const totalGastos=gastos.reduce((s,g)=>s+g.valor,0);
+  const totalPagosProv=pagosProv.reduce((s,p)=>s+p.valor,0);
+  const efectivoEsperado=base.valor+ventasDia.efectivo+ventasDia.anticiposEfectivo-totalPagosProv-totalGastos;
+  const sum=o=>DIGITALES.reduce((s,k)=>s+o[k],0);
+  return {totalGastos,totalPagosProv,efectivoEsperado,digitalVentas:sum(ventasDia.digital),digitalAnticipos:sum(ventasDia.anticiposDigital)};
+}
+function advertirEgreso(valor){   // evita registrar un egreso que deje la caja en negativo sin confirmar
+  const esperado=calcularCaja().efectivoEsperado;
+  return esperado-valor>=0 || confirm(`Este egreso deja el efectivo esperado en ${fmt(esperado-valor)}. ¿Continuar?`);
+}
+function sumarDigital(obj,metodo,valor){ const k=String(metodo).toUpperCase(); if(DIGITALES.includes(k)) obj[k]+=valor; }
+
+/* =====================================================================
+   4. (1) INDICADOR DINÁMICO DE CONEXIÓN A RENDER
+   >>> CONFIGURE AQUÍ la URL de su backend en Render y una ruta liviana (ej. /health) <<<
+   ===================================================================== */
+const RENDER_URL_NUBE='https://TU-SERVICIO.onrender.com';   // <<< ponga aquí la URL de su servicio de Render (solo si abre el POS desde otro sitio, ej. GitHub Pages)
+const RENDER_URL=location.hostname.endsWith('.onrender.com')?location.origin:RENDER_URL_NUBE;   // abierto desde Render: usa su propio dominio
+const RENDER_PING='/health';
+const PING_CADA_MS=20000;       // frecuencia de verificación
+const PING_TIMEOUT_MS=15000;    // Render gratis puede tardar al "despertar"
+let estadoRender=null;          // null = sin verificar | true = verde | false = rojo | 'cfg' = URL sin configurar
+let pingEnCurso=false;
+
+function pintarConexion(){
+  const pill=$id('statusPill'), txt=$id('statusTxt');
+  pill.classList.remove('on','off');
+  if(estadoRender===true){ pill.classList.add('on'); txt.innerText='Conectado a Render'; }
+  else if(estadoRender===false){ pill.classList.add('off'); txt.innerText='Sin conexión a Render'; }
+  else if(estadoRender==='cfg'){ txt.innerText='Configure RENDER_URL'; }
+  else txt.innerText='Verificando Render...';
+}
+async function pingRender(){
+  if(pingEnCurso) return;
+  if(RENDER_URL.includes('TU-SERVICIO')){ estadoRender='cfg'; pintarConexion(); return; }
+  pingEnCurso=true;
+  let ok=false;
+  if(navigator.onLine){
+    const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),PING_TIMEOUT_MS);
+    try{
+      const r=await fetch(RENDER_URL+RENDER_PING,{cache:'no-store',signal:ctl.signal});
+      ok=r.ok;                                   // 200-299 = backend vivo; 5xx/404 = rojo
+    }catch(e){
+      // Si el backend no habilita CORS el fetch normal falla aunque el servidor esté vivo:
+      // un segundo intento "no-cors" confirma que al menos responde. Si también falla => rojo.
+      try{ await fetch(RENDER_URL+RENDER_PING,{mode:'no-cors',cache:'no-store',signal:ctl.signal}); ok=true; }catch(e2){ ok=false; }
+    }
+    clearTimeout(t);
+  }
+  const antes=estadoRender; estadoRender=ok; pingEnCurso=false; pintarConexion();
+  if(antes===true && !ok) mostrarAlerta("⚠️ Se perdió la conexión con Render");
+}
+const checkConexion=pingRender;
+
+/* =====================================================================
+   5. CLIENTES, PROVEEDORES, INVENTARIO
+   ===================================================================== */
+function actualizarHeader(){
+  if(!sesionActual){ $id('loginScreen').style.display='flex'; return; }
+  const c=calcularCaja();
+  $id('infoHeader').innerHTML=`${esc(sesionActual.nombre)} (${esc(sesionActual.rol)}) | Base: ${fmt(base.valor)} | Caja esperada: ${fmt(c.efectivoEsperado)} | Cliente: ${esc(clienteActual.nombre)}`;
+  $id('resumenDia').innerText=`Ventas: ${fmt(ventasDia.total)} | Anticipos: ${fmt(ventasDia.anticiposEfectivo+c.digitalAnticipos)} | Pendientes subir: ${ventasPendientesSubir.length} | Fact: ${facturasVenta.length}`;
+  pintarConexion();
+}
+function renderSelects(){
+  const opts=proveedores.map(p=>`<option value="${esc(p.nombre)}">${esc(p.nombre)}</option>`).join('');
+  ['entProveedor','pagoProvSelect','devoProv'].forEach(id=>$id(id).innerHTML='<option value="">-- Prov --</option>'+opts);
+  renderProveedores(); filtrarClientes(); filtrarFacturasGuardadas();
+}
+function renderProveedores(){
+  const q=($id('provBuscar')?.value||'').toLowerCase();
+  $id('listaProv').innerHTML=proveedores.filter(p=>p.nombre.toLowerCase().includes(q)).map(p=>`<div style="border:1px solid #ddd;padding:4px"><b>${esc(p.nombre)}</b> NIT:${esc(p.nit)}</div>`).join('')||'Sin prov';
+}
+function filtrarClientes(){
+  const q=($id('clienteBuscar')?.value||'').toLowerCase();
+  $id('listaClientes').innerHTML=clientes.filter(c=>c.nombre.toLowerCase().includes(q)||c.doc.includes(q))
+    .map(c=>`<div style="padding:6px;border-bottom:1px solid #eee;cursor:pointer" onclick="seleccionarCliente('${esc(c.doc)}')"><b>${esc(c.nombre)}</b> ${esc(c.doc)}</div>`).join('');
+}
+function abrirCliente(){ $id('modalCliente').classList.add('show'); }
+function seleccionarCliente(doc){ clienteActual=clientes.find(c=>c.doc===doc)||clienteActual; saveAll(); cerrarModales(); }
+function guardarCliente(){
+  const c={nombre:$id('cliNombre').value.trim(),doc:$id('cliDoc').value.trim()};
+  if(!c.nombre||!c.doc) return alert('Datos');
+  clientes=clientes.filter(x=>x.doc!==c.doc); clientes.push(c); clienteActual=c; saveAll(); cerrarModales();
+}
+function abrirEntrada(){ $id('modalEntrada').classList.add('show'); }
+function guardarEntrada(){
+  const prov=$id('entProveedor').value, factura=$id('entFactura').value.trim(), codigo=$id('entCodigo').value.trim().toLowerCase();
+  const cant=parseInt($id('entCant').value)||0, costo=parseInt($id('entCosto').value)||0, precio=parseInt($id('entPrecio').value)||0;
+  if(!prov||!factura||!codigo||!cant||!costo) return alert('Faltan');
+  const p=productos.find(x=>x.codigo===codigo);
+  if(p){ p.stock+=cant; p.costo=costo; if(precio) p.precio=precio; }
+  else productos.push({codigo,nombre:codigo,stock:cant,costo,precio:precio||Math.round(costo*1.4),vencimiento:$id('entVenc').value||'2026-12-31',proveedor:prov});
+  const f=facturasCompra.find(x=>x.numero===factura&&x.proveedor===prov);
+  if(f){ f.total+=cant*costo; f.saldo+=cant*costo; }
+  else facturasCompra.push({numero:factura,proveedor:prov,total:cant*costo,saldo:cant*costo,fecha:new Date().toLocaleDateString()});
+  saveAll(); cerrarModales();
+}
+function abrirSalida(){ $id('modalSalida').classList.add('show'); }
+function guardarSalida(){
+  const codigo=$id('salCodigo').value.trim().toLowerCase(), cant=parseInt($id('salCant').value)||0;
+  if(!codigo||!cant) return alert('Faltan');
+  const p=productos.find(x=>x.codigo===codigo); if(!p) return alert('No existe'); if(p.stock<cant) return alert('Stock insuf');
+  p.stock-=cant; saveAll(); cerrarModales();
+}
+function abrirProveedores(){ $id('modalProveedores').classList.add('show'); }
+function guardarProveedor(){
+  const p={nombre:$id('provNombre').value.trim(),nit:$id('provNit').value.trim(),tel:$id('provTel').value.trim(),asesor:$id('provAsesor').value.trim()};
+  if(!p.nombre||!p.nit) return alert('Datos');
+  proveedores=proveedores.filter(x=>x.nit!==p.nit); proveedores.push(p); saveAll();
+}
+function abrirDevol(){ $id('modalDevol').classList.add('show'); }
+function buscarDevo(){
+  const cod=$id('devoCodigo').value.trim().toLowerCase(), p=productos.find(x=>x.codigo===cod);
+  $id('devoInfo').innerHTML=p?`<b>${esc(p.nombre)}</b> Stock:${p.stock} Vence:${esc(p.vencimiento)}`:'No encontrado';
+}
+function guardarDevol(){
+  const codigo=$id('devoCodigo').value.trim().toLowerCase(), cant=parseInt($id('devoCant').value)||0, prov=$id('devoProv').value;
+  if(!codigo||!cant||!prov) return alert('Faltan');
+  const p=productos.find(x=>x.codigo===codigo); if(!p||p.stock<cant) return alert('Stock');
+  p.stock-=cant; devoluciones.push({codigo,cant,proveedor:prov,fecha:new Date().toLocaleString()}); saveAll(); alert('Devolucion OK');
+}
+
+/* =====================================================================
+   6. (5) BASE / PAGO PROV / GASTO  → todos alimentan calcularCaja()
+   ===================================================================== */
+function abrirBase(){ $id('modalBase').classList.add('show'); }
+function guardarBase(){
+  const v=parseInt($id('baseInput').value)||0; if(!v) return alert('Monto');
+  base.valor=v; saveAll(); cerrarModales();          // saveAll → actualizarHeader → recalcula "Caja esperada"
+}
+function abrirPagoProv(){ $id('modalPagoProv').classList.add('show'); cargarFacturas(); }
+function cargarFacturas(){
+  const prov=$id('pagoProvSelect').value, fact=facturasCompra.filter(f=>!prov||f.proveedor===prov);
+  $id('boxFacturas').innerHTML=fact.map(f=>`<div style="border:1px solid #eee;padding:4px">Fact:${esc(f.numero)} Saldo:${fmt(f.saldo||f.total)} <button onclick="$id('pagoValor').value=${f.saldo||f.total}">Usar</button></div>`).join('')||'Sin facturas';
+}
+function guardarPagoProv(){
+  const prov=$id('pagoProvSelect').value, valor=parseInt($id('pagoValor').value)||0;
+  if(!prov||!valor) return alert('Datos');
+  if(!advertirEgreso(valor)) return;
+  const fact=facturasCompra.find(f=>f.proveedor===prov&&(f.saldo||f.total)>0);
+  if(fact){ fact.saldo-=valor; if(fact.saldo<0) fact.saldo=0; }
+  pagosProv.push({proveedor:prov,valor,fecha:new Date().toLocaleString()});   // egreso de efectivo
+  saveAll(); cargarFacturas();
+}
+function abrirGasto(){ $id('modalGasto').classList.add('show'); }
+function guardarGasto(){
+  const valor=parseInt($id('gastoValor').value)||0, concepto=$id('gastoConcepto').value.trim();
+  if(!valor||!concepto) return alert('Faltan');
+  if(!advertirEgreso(valor)) return;
+  gastos.push({valor,concepto,fecha:new Date().toLocaleString()});             // egreso de efectivo
+  saveAll(); cerrarModales();
+}
+
+/* =====================================================================
+   7. VENTA: CARRITO
+   ===================================================================== */
+const totalCarrito=()=>carrito.reduce((s,i)=>s+i.precio*i.cant,0);
+function accionAgregar(){
+  const q=$id('codigoInput').value.trim().toLowerCase(); if(!q) return;
+  const p=productos.find(x=>x.codigo===q||x.nombre.toLowerCase().includes(q));
+  if(!p){ alert('Producto no encontrado'); return; }
+  const ex=carrito.find(x=>x.codigo===p.codigo);
+  if(ex) ex.cant++; else carrito.push({...p,cant:1});
+  renderCarrito(); $id('codigoInput').value='';
+}
+function renderCarrito(){
+  $id('tbodyVenta').innerHTML=carrito.map(i=>`<tr><td>${esc(i.nombre)}</td><td>${esc(i.codigo)}</td><td>${esc(i.stock)}</td><td>${fmt(i.precio)}</td><td>${i.cant}</td><td>${fmt(i.precio*i.cant)}</td></tr>`).join('');
+  $id('totalTxt').innerText='$ '+totalCarrito().toLocaleString('es-CO');
+  calcVuelto();
+}
+function quitarUltimo(){ carrito.pop(); renderCarrito(); }
+
+/* =====================================================================
+   8. (3) VUELTO COMBINADO
+   Efectivo + select Método:
+   - Efectivo  → el efectivo debe cubrir el total; vuelto = efectivo - total.
+   - NEQUI / TARJETA / DAVIPLATA (o COMBINADO + medio digital) → el efectivo es un ABONO PARCIAL
+     y el resto lo paga el medio digital.  Vuelto = (Efectivo + MontoDigital) - Total.
+     Pago exacto combinado → vuelto $0. Solo hay vuelto real si el efectivo, por sí solo, supera el total.
+   ===================================================================== */
+function metodoDigitalActual(){
+  const m=$id('metodoPago').value.toUpperCase();
+  if(m==='COMBINADO') return $id('metodoDigital').value.toUpperCase();
+  return DIGITALES.includes(m)?m:null;           // null → pago solo en efectivo
+}
+function calcularPago(total,efectivo){
+  const dig=metodoDigitalActual();
+  const efectivoAplicado=Math.min(efectivo,total);              // efectivo que realmente se queda en el cajón
+  const montoDigital=dig?total-efectivoAplicado:0;              // el saldo restante lo cubre el medio digital
+  const vuelto=Math.max(0,(efectivo+montoDigital)-total);       // nunca negativo
+  const falta=dig?0:Math.max(0,total-efectivo);                 // solo aplica a pago 100% efectivo
+  return {dig,efectivoAplicado,montoDigital,vuelto,falta};
+}
+function calcVuelto(){
+  $id('metodoDigital').style.display=$id('metodoPago').value==='COMBINADO'?'':'none';
+  const total=totalCarrito(), ef=parseInt($id('efectivoInput').value)||0, p=calcularPago(total,ef);
+  const v=$id('vueltoTxt'), d=$id('digitalTxt');
+  if(p.falta>0&&ef>0){ v.innerText='Falta: '+fmt(p.falta); v.style.background='#f8d7da'; }
+  else { v.innerText='Vuelto: '+fmt(p.vuelto); v.style.background='#d4edda'; }
+  if(p.dig&&total>0){ d.style.display=''; d.innerText=`${p.dig}: ${fmt(p.montoDigital)}`; } else d.style.display='none';
+}
+
+/* =====================================================================
+   9. COBRAR F1  (venta normal)
+   La liquidación de apartados la maneja el módulo de la sección 10, que envuelve esta función.
+   ===================================================================== */
+function accionCobrar(){
+  if(!sesionActual) return;
+  const total=totalCarrito();
+  if(total===0) return alert('Vacio');
+  const efectivo=parseInt($id('efectivoInput').value)||0;
+  const metodo=$id('metodoPago').value;
+  const p=calcularPago(total,efectivo);
+  if(!p.dig&&efectivo<total) return alert('Efectivo menor');
+
+  consecutivo++;
+  const metodoReg=metodo==='COMBINADO'?`COMBINADO (${p.dig})`:metodo;
+  const factura={numero:consecutivo,fecha:new Date().toLocaleString(),cliente:{...clienteActual},items:[...carrito],total,metodo:metodoReg,
+    efectivo,vuelto:p.vuelto,pagoEfectivo:p.efectivoAplicado,pagoDigital:p.montoDigital,cajero:sesionActual.nombre,id_usuario:sesionActual.id,negocio:configNegocio};
+
+  carrito.forEach(c=>{ const pr=productos.find(x=>x.codigo===c.codigo); if(pr) pr.stock-=c.cant; });
+  ventasDia.total+=total;
+  // Caja: efectivo físico neto (sin vuelto) y digital por categoría
+  ventasDia.efectivo+=p.efectivoAplicado;
+  if(p.dig) sumarDigital(ventasDia.digital,p.dig,p.montoDigital);
+
+  facturasVenta.push(factura); ventasPendientesSubir.push(factura);
+  saveAll();
+  try{ imprimirTicket(factura); }catch(e){ mostrarAlerta("Impresora no detectada. Verifique conexión. Venta guardada igual."); }
+  carrito=[]; renderCarrito(); $id('efectivoInput').value='';
+  clienteActual={nombre:"Cliente Mostrador",doc:"000"}; saveAll();
+}
+
+/* =====================================================================
+   10. (4) MÓDULO APARTADOS: APARTAR + VER APARTADOS + LIQUIDACIÓN
+   Estructura: { id, cliente, documento, producto, totalOriginal, totalAbonado, saldoDebe, estado }
+   (más campos internos items/fecha para descontar stock al liquidar)
+   ===================================================================== */
+/* ---------- Estado global ---------- */
+// { id, cliente, documento, producto, totalOriginal, totalAbonado, saldoDebe, estado, + items/fecha (internos) }
+let apartados = aptMigrar(JSON.parse(localStorage.getItem('v14_apartados') || '[]'));
+let apartadoEnCobro = null;   // ID del apartado cuyo saldo está cargado en pantalla de cobro
+
+/* ---------- Utilidades (prefijo apt para no chocar con las tuyas) ---------- */
+const APT_DIG = ['TARJETA', 'NEQUI', 'DAVIPLATA'];
+const aptEl  = id => document.getElementById(id);
+const aptFmt = n => '$' + (Number(n) || 0).toLocaleString('es-CO');
+const aptEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function aptGuardar() { localStorage.setItem('v14_apartados', JSON.stringify(apartados)); }
+
+// Convierte registros de la versión anterior (codigo/abonos/total) al formato nuevo
+function aptMigrar(lista) {
+  return (lista || []).map(a => {
+    if (a.id) return a;
+    const abonado = (a.abonos || []).reduce((s, x) => s + x.valor, 0);
+    return { id: a.codigo, cliente: a.cliente?.nombre, documento: a.cliente?.doc,
+      producto: (a.items || []).map(i => `${i.cant}x ${i.nombre}`).join(', '),
+      totalOriginal: a.total, totalAbonado: abonado, saldoDebe: Math.max(0, a.total - abonado), estado: a.estado,
+      items: (a.items || []).map(i => ({ codigo: i.codigo, nombre: i.nombre, precio: i.precio, cant: i.cant })),
+      fecha: a.fecha, stockDescontado: true };   // esos ya descontaron stock al apartar
+  });
+}
+
+/* ---------- PUNTO ÚNICO de conexión con tu caja (edita solo estas 3 si tus campos se llaman distinto) ----------
+   Modelo: ventasDia.total (Ventas Netas) · ventasDia.efectivo (efectivo físico neto de ventas)
+           ventasDia.digital{} · ventasDia.anticiposEfectivo · ventasDia.anticiposDigital{}
+   Efectivo esperado = Base + efectivo + anticiposEfectivo - PagosProv - Gastos  (digitales nunca entran) */
+function aptAsegurarCaja() {
+  ventasDia.anticiposEfectivo = ventasDia.anticiposEfectivo || 0;
+  ventasDia.digital = ventasDia.digital || { TARJETA: 0, NEQUI: 0, DAVIPLATA: 0 };
+  ventasDia.anticiposDigital = ventasDia.anticiposDigital || { TARJETA: 0, NEQUI: 0, DAVIPLATA: 0 };
+}
+// Al APARTAR: el abono es Recaudo/Anticipo. NO toca Ventas Netas.
+function aptCajaAnticipo(valor, dig) {
+  aptAsegurarCaja();
+  if (dig) ventasDia.anticiposDigital[dig] += valor; else ventasDia.anticiposEfectivo += valor;
+}
+// Al LIQUIDAR: la venta neta entra por el valor ORIGINAL completo...
+function aptCajaVentaNeta(totalOriginal) { ventasDia.total += totalOriginal; }
+// ...pero a la caja solo entra lo cobrado hoy (el saldo). El anticipo previo ya está en "anticipos",
+// por eso el arqueo no se duplica.
+function aptCajaCobroSaldo(efectivoNeto, dig, montoDigital) {
+  aptAsegurarCaja();
+  ventasDia.efectivo += efectivoNeto;
+  if (dig && montoDigital > 0) ventasDia.digital[dig] += montoDigital;
+}
+
+/* =====================================================================
+   1. BOTÓN "APARTAR"
+   ===================================================================== */
+function accionApartar() {
+  if (typeof sesionActual !== 'undefined' && !sesionActual) return;
+  if (apartadoEnCobro) return alert('Hay un saldo de apartado en liquidación. Use COBRAR F1 o cancélelo con X.');
+
+  // Validación de cliente
+  const nombre = String(clienteActual?.nombre || '').trim(), doc = String(clienteActual?.doc || '').trim();
+  if (!nombre || !doc || doc === '000' || nombre.toLowerCase() === 'cliente mostrador')
+    return alert('Debe registrar o seleccionar un cliente con datos completos para realizar un apartado');
+
+  const total = carrito.reduce((s, i) => s + i.precio * i.cant, 0);
+  if (total === 0) return alert('Vacio');
+  const abono = parseInt(aptEl('efectivoInput').value) || 0;           // Abono Inicial
+  if (abono <= 0) return alert('Ingrese el Abono Inicial en la casilla Efectivo');
+  if (abono >= total) return alert('El abono cubre el total. Use COBRAR F1 para una venta normal.');
+
+  const m = (aptEl('metodoPago')?.value || '').toUpperCase();
+  const dig = APT_DIG.includes(m) ? m : null;                           // Nequi/Tarjeta/Daviplata → digital; si no, cajón físico
+  const saldo = total - abono;
+
+  apartados.push({
+    id: 'APT-' + Date.now(), cliente: nombre, documento: doc,
+    producto: carrito.map(i => `${i.cant}x ${i.nombre}`).join(', '),
+    totalOriginal: total, totalAbonado: abono, saldoDebe: saldo, estado: 'Pendiente',
+    // internos (no cambian la estructura pedida): permiten descontar stock al liquidar
+    items: carrito.map(i => ({ codigo: i.codigo, nombre: i.nombre, precio: i.precio, cant: i.cant })),
+    fecha: new Date().toLocaleString(), metodoAbono: dig || 'Efectivo', stockDescontado: false
+  });
+  aptCajaAnticipo(abono, dig);          // entra como Recaudo/Anticipo; NO suma a Ventas Netas; NO descarga stock
+
+  carrito = []; renderCarrito(); aptEl('efectivoInput').value = '';
+  clienteActual = { nombre: 'Cliente Mostrador', doc: '000' };
+  aptGuardar(); saveAll();
+  mostrarAlerta(`Apartado creado. Saldo pendiente: ${aptFmt(saldo)}`, '#198754');
+}
+
+/* =====================================================================
+   2. MÓDULO "VER APARTADOS"
+   ===================================================================== */
+(function inyectarModal() {
+  aptEl('modalApartados')?.remove();
+  const d = document.createElement('div'); d.id = 'modalApartados'; d.className = 'modal';
+  d.innerHTML = `<div class="modal-box" style="max-width:980px"><h3>📋 Apartados</h3>
+    <input id="apBuscar" placeholder="Buscar por documento o nombre del cliente" oninput="renderApartados()">
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Abonado</th><th>Saldo Debe</th><th>Estado</th><th></th></tr></thead>
+    <tbody id="tbodyApartados"></tbody></table></div>
+    <button class="btn btn-X" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button></div>`;
+  document.body.appendChild(d);
+})();
+
+function abrirApartados() { aptEl('modalApartados').classList.add('show'); renderApartados(); }
+function renderApartados() {
+  const q = (aptEl('apBuscar').value || '').trim().toLowerCase();
+  const lista = apartados.filter(a => !q || String(a.cliente).toLowerCase().includes(q) || String(a.documento).toLowerCase().includes(q)).slice().reverse();
+  aptEl('tbodyApartados').innerHTML = lista.map(a => {
+    const pend = a.estado === 'Pendiente';
+    return `<tr><td><b>${aptEsc(a.id)}</b></td><td>${aptEsc(a.cliente)}<br><small>${aptEsc(a.documento)}</small></td>
+      <td style="text-align:left">${aptEsc(a.producto)}</td><td>${aptFmt(a.totalOriginal)}</td><td>${aptFmt(a.totalAbonado)}</td>
+      <td><b style="color:${a.saldoDebe > 0 ? '#c00' : '#198754'}">${aptFmt(a.saldoDebe)}</b></td>
+      <td><span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;color:#fff;background:${pend ? '#fd7e14' : '#198754'}">${a.estado}</span></td>
+      <td>${pend ? `<button class="btn btn-COBRAR" onclick="cobrarSaldo('${aptEsc(a.id)}')">Cobrar Saldo</button>` : ''}</td></tr>`;
+  }).join('') || '<tr><td colspan="8">Sin apartados</td></tr>';
+}
+
+// "Cobrar Saldo": cierra el modal, inyecta el producto con TOTAL = Saldo Debe, y bloquea el carrito
+function cobrarSaldo(id) {
+  const ap = apartados.find(a => a.id === id); if (!ap || ap.estado !== 'Pendiente') return;
+  if (carrito.length && !apartadoEnCobro && !confirm('Se reemplazará el carrito actual. ¿Continuar?')) return;
+  cerrarModales();
+  apartadoEnCobro = ap.id;                                         // referencia del apartado en liquidación
+  clienteActual = { nombre: ap.cliente, doc: ap.documento };
+  carrito = [{ codigo: ap.id, nombre: `${ap.producto} (saldo ${ap.id})`, precio: ap.saldoDebe, cant: 1, stock: '—' }];
+  aptEl('efectivoInput').value = ''; renderCarrito(); saveAll();   // TOTAL = Saldo Debe exacto
+  mostrarAlerta(`Saldo de ${ap.id} cargado. Presione COBRAR F1`, '#198754');
+}
+
+// Bloqueo del carrito mientras hay una liquidación (envuelve tus funciones sin editarlas)
+if (!accionAgregar.__apt) {
+  const _agregar = accionAgregar;
+  accionAgregar = function () {
+    if (apartadoEnCobro) return alert('Carrito bloqueado: hay un saldo de apartado en liquidación. Cobre o cancele con X.');
+    return _agregar.apply(this, arguments);
+  };
+  accionAgregar.__apt = true;
+}
+if (!quitarUltimo.__apt) {
+  const _quitar = quitarUltimo;
+  quitarUltimo = function () {
+    if (apartadoEnCobro) { apartadoEnCobro = null; carrito = []; renderCarrito(); return mostrarAlerta('Liquidación cancelada', '#6c757d'); }
+    return _quitar.apply(this, arguments);
+  };
+  quitarUltimo.__apt = true;
+}
+
+/* =====================================================================
+   3. LIQUIDACIÓN (puente con COBRAR F1)
+   Si NO hay apartado en liquidación → corre tu accionCobrar original intacta.
+   ===================================================================== */
+if (!accionCobrar.__apt) {
+  const _cobrar = accionCobrar;
+  accionCobrar = function () {
+    if (!apartadoEnCobro) return _cobrar.apply(this, arguments);
+
+    const ap = apartados.find(a => a.id === apartadoEnCobro);
+    if (!ap || ap.estado !== 'Pendiente') { apartadoEnCobro = null; carrito = []; renderCarrito(); return alert('El apartado ya no está disponible'); }
+
+    const saldo = ap.saldoDebe;
+    const efectivo = parseInt(aptEl('efectivoInput').value) || 0;
+    const metodo = aptEl('metodoPago').value;
+    const m = metodo.toUpperCase();
+    const dig = m === 'COMBINADO' ? (aptEl('metodoDigital') ? aptEl('metodoDigital').value.toUpperCase() : null) : (APT_DIG.includes(m) ? m : null);
+    if (!dig && efectivo < saldo) return alert('Efectivo menor');
+
+    // Pago del saldo: con método digital el efectivo es abono parcial y el resto va por el medio digital
+    const efectivoNeto = Math.min(efectivo, saldo);
+    const montoDigital = dig ? saldo - efectivoNeto : 0;
+    const vuelto = Math.max(0, efectivo + montoDigital - saldo);
+
+    // a) Estado del apartado → Finalizado
+    const abonoPrevio = ap.totalAbonado;
+    ap.totalAbonado = ap.totalOriginal; ap.saldoDebe = 0; ap.estado = 'Finalizado'; ap.fechaFin = new Date().toLocaleString();
+
+    // b) Descuento definitivo de stock (solo si no se descontó antes)
+    if (!ap.stockDescontado) { (ap.items || []).forEach(i => { const p = productos.find(x => x.codigo === i.codigo); if (p) p.stock -= i.cant; }); ap.stockDescontado = true; }
+
+    // c) Caja: venta neta por el total original; efectivo/digital solo por lo cobrado hoy (sin duplicar el anticipo)
+    aptCajaVentaNeta(ap.totalOriginal);
+    aptCajaCobroSaldo(efectivoNeto, dig, montoDigital);
+
+    // d) Factura/ticket (mismo formato que tu venta normal; mostrará abono previo y saldo cobrado)
+    let factura = null;
+    if (typeof facturasVenta !== 'undefined') {
+      consecutivo++;
+      factura = { numero: consecutivo, fecha: new Date().toLocaleString(), cliente: { nombre: ap.cliente, doc: ap.documento },
+        items: (ap.items || []).map(i => ({ ...i })), total: ap.totalOriginal,
+        metodo: m === 'COMBINADO' ? `COMBINADO (${dig})` : metodo, efectivo, vuelto, pagoEfectivo: efectivoNeto, pagoDigital: montoDigital,
+        apartado: ap.id, abonoPrevio, saldoCobrado: saldo,
+        cajero: typeof sesionActual !== 'undefined' && sesionActual ? sesionActual.nombre : '', id_usuario: typeof sesionActual !== 'undefined' && sesionActual ? sesionActual.id : null,
+        negocio: typeof configNegocio !== 'undefined' ? configNegocio : {} };
+      facturasVenta.push(factura);
+      if (typeof ventasPendientesSubir !== 'undefined') ventasPendientesSubir.push(factura);
+    }
+    aptGuardar(); saveAll();
+    if (factura && typeof imprimirTicket === 'function') { try { imprimirTicket(factura); } catch (e) { mostrarAlerta('Impresora no detectada. Venta guardada igual.'); } }
+
+    // e) Libera el carrito
+    apartadoEnCobro = null; carrito = []; renderCarrito(); aptEl('efectivoInput').value = '';
+    clienteActual = { nombre: 'Cliente Mostrador', doc: '000' }; saveAll();
+    mostrarAlerta(`Apartado ${ap.id} finalizado`, '#198754');
+  };
+  accionCobrar.__apt = true;
+}
+
+/* =====================================================================
+   11. IMPRESIÓN (tickets térmicos 80 mm)
+   ===================================================================== */
+function abrirImprimir(){ $id('modalImprimir').classList.add('show'); filtrarFacturasGuardadas(); }
+function filtrarFacturasGuardadas(){
+  const q=($id('buscarFactura')?.value||'').toLowerCase();
+  const f=facturasVenta.filter(x=>String(x.numero).includes(q)||x.cliente.nombre.toLowerCase().includes(q));
+  $id('listaFacturasGuardadas').innerHTML=f.slice(-20).reverse().map(fac=>`<div style="border:1px solid #ddd;padding:6px;margin:3px"><b>Ticket #${fac.numero}</b> ${esc(fac.cliente.nombre)} ${fmt(fac.total)} por ${esc(fac.cajero||'')} <button onclick="imprimirFacturaGuardada(${fac.numero})">🖨️</button></div>`).join('')||'Sin facturas';
+}
+const filaTk=(a,b,bold)=>`<div style="display:flex;justify-content:space-between${bold?';font-weight:bold':''}"><span>${a}</span><span>${b}</span></div>`;
+const cabeceraTk=n=>`<div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:6px"><b style="font-size:16px">${esc(n.nombre)}</b><br>${esc(n.nit)}<br>${esc(n.dir)} - ${esc(n.tel)}<br><i>${esc(n.frase)}</i></div>`;
+
+function construirHTMLTicket(f){
+  const extra=f.apartado?filaTk(`Abonos previos (${esc(f.apartado)}):`,fmt(f.abonoPrevio))+filaTk('Saldo cobrado:',fmt(f.saldoCobrado),true):'';
+  const dig=f.pagoDigital>0?filaTk('Pago digital:',fmt(f.pagoDigital)):'';
+  return `${cabeceraTk(f.negocio)}
+  <div style="font-size:12px">Ticket #${String(f.numero).padStart(5,'0')}<br>Fecha: ${esc(f.fecha)}<br>Cajero: ${esc(f.cajero)}<br><b>Venta realizada por: ${esc(f.cajero)}</b></div>
+  <div style="border-top:1px dashed #000;padding-top:6px">Cliente: ${esc(f.cliente.nombre)}<br>CC/NIT: ${esc(f.cliente.doc||'Consumidor Final')}</div>
+  <div style="border-top:1px dashed #000;border-bottom:1px dashed #000;padding:6px 0">${filaTk('Cant','Descripción &nbsp; Subtotal',true)}
+  ${f.items.map(i=>filaTk(i.cant,`${esc(i.nombre.substring(0,18))} &nbsp; ${fmt(i.precio*i.cant)}`)).join('')}</div>
+  <div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:16px;font-weight:bold"><span>TOTAL A PAGAR:</span><span>${fmt(f.total)}</span></div>
+  ${extra}Metodo: ${esc(f.metodo)}<br>Efectivo recibido: ${fmt(f.efectivo)}<br>${dig}Vuelto: ${fmt(f.vuelto)}</div>`;
+}
+function imprimirHTML(html){ $id('ticketPrint').innerHTML=html; window.print(); }
+function imprimirTicket(f){ imprimirHTML(construirHTMLTicket(f)); }
+function imprimirActual(){
+  if(carrito.length===0) return alert('No hay carrito');
+  const total=totalCarrito(), efectivo=parseInt($id('efectivoInput').value)||0, p=calcularPago(total,efectivo), metodo=$id('metodoPago').value;
+  imprimirTicket({numero:consecutivo+1,fecha:new Date().toLocaleString(),cliente:{...clienteActual},items:[...carrito],total,
+    metodo:metodo==='COMBINADO'?`COMBINADO (${p.dig})`:metodo,efectivo,vuelto:p.vuelto,pagoDigital:p.montoDigital,
+    cajero:sesionActual.nombre,id_usuario:sesionActual.id,negocio:configNegocio});
+}
+function imprimirFacturaGuardada(n){ const fac=facturasVenta.find(f=>f.numero===n); if(fac) imprimirTicket(fac); }
+
+/* =====================================================================
+   12. (5) CIERRE F8 — arqueo unificado
+   ===================================================================== */
+function abrirCierre(){
+  const c=calcularCaja(), pendientes=ventasPendientesSubir.length;
+  const aps=apartados.filter(a=>a.estado==='Pendiente');
+  const fila=(t,v,col)=>`<div style="display:flex;justify-content:space-between"><span>${t}</span><b${col?` style="color:${col}"`:''}>${fmt(v)}</b></div>`;
+  const digRows=DIGITALES.map(k=>fila(`${k}`,ventasDia.digital[k]+ventasDia.anticiposDigital[k])).join('');
+  $id('cierreDetalle').innerHTML=`
+  <b>ARQUEO DE EFECTIVO FÍSICO</b>
+  ${fila('Base inicial',base.valor)}
+  ${fila('+ Ventas en efectivo físico',ventasDia.efectivo,'green')}
+  ${fila('+ Abonos / Anticipos recibidos (efectivo)',ventasDia.anticiposEfectivo,'green')}
+  ${fila('− Pagos a proveedores',c.totalPagosProv,'#c00')}
+  ${fila('− Gastos',c.totalGastos,'#c00')}
+  <hr><div style="display:flex;justify-content:space-between"><b>DEBE HABER EN CAJÓN:</b><b style="font-size:22px">${fmt(c.efectivoEsperado)}</b></div>
+  <hr><b>PAGOS DIGITALES (no entran al cajón)</b>
+  ${digRows}${fila('Total digital',c.digitalVentas+c.digitalAnticipos)}
+  <hr><b>RESUMEN</b>
+  ${fila('Ventas del día (apartados finalizados completos)',ventasDia.total,'green')}
+  ${fila('Anticipos recibidos hoy (efectivo + digital)',ventasDia.anticiposEfectivo+c.digitalAnticipos)}
+  <div style="display:flex;justify-content:space-between"><span>Apartados pendientes</span><b>${aps.length} · saldo ${fmt(aps.reduce((s,a)=>s+a.saldoDebe,0))}</b></div>
+  ${pendientes>0?`<br><span style="background:#ffc107;padding:6px;border-radius:6px;display:inline-block">⚠️ Cierre local. Hay ${pendientes} ventas pendientes por subir. No apague la PC</span>`:''}`;
+  $id('modalCierre').classList.add('show');
+}
+function hacerCierre(){
+  if(!confirm('Cerrar turno?')) return;
+  enviarCierreNube();                                   // guarda el arqueo en la nube ANTES de reiniciar la caja
+  ventasDia=cajaVacia(); gastos=[]; pagosProv=[];      // los apartados pendientes se conservan
+  saveAll(); cerrarModales(); logout();
+}
+
+/* =====================================================================
+   13. SINCRONIZACIÓN CON LA BASE DE DATOS EN LA NUBE (Render PostgreSQL)
+   - El POS sigue guardando en este equipo (funciona sin internet) y además sube todo a la nube.
+   - Si no hay internet, queda pendiente y se reintenta solo (cada 60 s y al volver la conexión).
+   - La clave (API_KEY de Render) se pide una sola vez y se guarda en este navegador.
+   ===================================================================== */
+let syncTimer=null, syncEnCurso=false, syncRepetir=false, ultimaHuella='';
+let cierresPendientes=cargar('v14_cierres_pend',[]);
+const nubeConfigurada=()=>!RENDER_URL.includes('TU-SERVICIO');
+
+async function apiFetch(ruta,opciones={}){
+  let clave=localStorage.getItem('v14_apikey');
+  if(!clave){ clave=(prompt('Clave de sincronización con la nube (API_KEY de Render):')||'').trim(); if(clave) localStorage.setItem('v14_apikey',clave); }
+  if(!clave) throw new Error('sin clave');
+  const r=await fetch(RENDER_URL+ruta,{...opciones,headers:{'Content-Type':'application/json','x-api-key':clave,...(opciones.headers||{})}});
+  if(r.status===401){ localStorage.removeItem('v14_apikey'); mostrarAlerta('Clave de la nube incorrecta. Se pedirá de nuevo.'); throw new Error('401'); }
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+function programarSync(){ clearTimeout(syncTimer); syncTimer=setTimeout(sincronizarNube,1500); }
+
+async function sincronizarNube(){
+  if(!nubeConfigurada()||!navigator.onLine) return;
+  if(syncEnCurso){ syncRepetir=true; return; }
+  syncEnCurso=true;
+  // 1ª vez en este equipo: sube también las facturas de venta ya existentes; después solo las pendientes
+  const primera=!localStorage.getItem('v14_sync_inicial');
+  const enviadas=primera?facturasVenta.slice():ventasPendientesSubir.slice();
+  const payload={productos,proveedores,clientes,facturasCompra,facturasVenta:enviadas,pagosProv,gastos,devoluciones,apartados,
+    caja:{ventasDia,base,consecutivo}};
+  const cuerpo=JSON.stringify(payload);
+  try{
+    // cierres que no alcanzaron a subirse
+    while(cierresPendientes.length){ await apiFetch('/api/cierre',{method:'POST',body:JSON.stringify(cierresPendientes[0])}); cierresPendientes.shift(); localStorage.setItem('v14_cierres_pend',JSON.stringify(cierresPendientes)); }
+    if(cuerpo!==ultimaHuella||enviadas.length){
+      await apiFetch('/api/sync',{method:'POST',body:cuerpo});
+      ultimaHuella=cuerpo;
+      if(primera) localStorage.setItem('v14_sync_inicial','1');
+      ventasPendientesSubir=ventasPendientesSubir.filter(f=>!enviadas.includes(f));
+      localStorage.setItem('v14_pendientes',JSON.stringify(ventasPendientesSubir));
+      actualizarHeader();
+    }
+  }catch(e){ console.warn('Sincronización pendiente:',e.message); }
+  syncEnCurso=false;
+  if(syncRepetir){ syncRepetir=false; programarSync(); }
+}
+
+// Equipo vacío (instalación nueva o navegador borrado): recupera todo desde la nube
+async function cargarDesdeNube(){
+  if(!nubeConfigurada()) return;
+  const vacio=productos.length===0&&facturasVenta.length===0&&apartados.length===0;
+  if(!vacio){ programarSync(); return; }
+  try{
+    const n=await apiFetch('/api/snapshot');
+    if(!(n.productos||[]).length&&!(n.facturasVenta||[]).length&&!(n.apartados||[]).length){ programarSync(); return; }
+    productos=n.productos||[]; proveedores=n.proveedores||[]; if((n.clientes||[]).length) clientes=n.clientes;
+    facturasCompra=n.facturasCompra||[]; facturasVenta=n.facturasVenta||[]; pagosProv=n.pagosProv||[]; gastos=n.gastos||[];
+    devoluciones=n.devoluciones||[]; apartados=n.apartados||[];
+    if(n.caja){ ventasDia=normalizarCaja(n.caja.ventasDia); base=n.caja.base||base; consecutivo=Math.max(consecutivo,n.caja.consecutivo||0); }
+    localStorage.setItem('v14_sync_inicial','1'); aptGuardar(); saveAll();
+    mostrarAlerta('Datos cargados desde la nube','#198754');
+  }catch(e){ console.warn('No se pudo cargar de la nube:',e.message); }
+}
+
+// Resumen del cierre de turno → tabla "cierres"
+function enviarCierreNube(){
+  const c=calcularCaja();
+  const datos={fecha:new Date().toLocaleString(),cajero:sesionActual?sesionActual.nombre:null,base:base.valor,ventasDia:JSON.parse(JSON.stringify(ventasDia)),
+    efectivoEsperado:c.efectivoEsperado,totalPagosProv:c.totalPagosProv,totalGastos:c.totalGastos,digitalVentas:c.digitalVentas,digitalAnticipos:c.digitalAnticipos,
+    gastosDetalle:[...gastos],pagosProvDetalle:[...pagosProv]};
+  cierresPendientes.push(datos); localStorage.setItem('v14_cierres_pend',JSON.stringify(cierresPendientes));
+  sincronizarNube();
+}
+
+/* =====================================================================
+   14. UI COMÚN E INICIO
+   ===================================================================== */
+function cerrarModales(){ document.querySelectorAll('.modal').forEach(m=>m.classList.remove('show')); }
+function mostrarAlerta(txt,color="#ff3b30"){ const a=$id('alerta'); a.innerText=txt; a.style.background=color; a.style.display='block'; setTimeout(()=>a.style.display='none',3000); }
+
+renderUsuariosLogin(); actualizarHeader(); renderSelects(); renderCarrito();
+pingRender(); setInterval(pingRender,PING_CADA_MS);
+window.addEventListener('online',()=>{ pingRender(); sincronizarNube(); }); window.addEventListener('offline',pingRender);
+cargarDesdeNube(); setInterval(sincronizarNube,60000);   // reintento automático si hubo cortes de internet
+if(sesionActual){ $id('loginScreen').style.display='none'; aplicarPermisosPorRol(); }
+</script>
+</body>
+</html>
