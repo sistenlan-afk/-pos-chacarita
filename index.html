@@ -310,7 +310,7 @@ function sumarDigital(obj,metodo,valor){ const k=String(metodo).toUpperCase(); i
    4. (1) INDICADOR DINÁMICO DE CONEXIÓN A RENDER
    >>> CONFIGURE AQUÍ la URL de su backend en Render y una ruta liviana (ej. /health) <<<
    ===================================================================== */
-const RENDER_URL_NUBE='https://TU-SERVICIO.onrender.com';   // <<< ponga aquí la URL de su servicio de Render (solo si abre el POS desde otro sitio, ej. GitHub Pages)
+const RENDER_URL_NUBE='https://pos-chacarita.onrender.com';   // <<< ponga aquí la URL de su servicio de Render (solo si abre el POS desde otro sitio, ej. GitHub Pages)
 const RENDER_URL=location.hostname.endsWith('.onrender.com')?location.origin:RENDER_URL_NUBE;   // abierto desde Render: usa su propio dominio
 const RENDER_PING='/health';
 const PING_CADA_MS=20000;       // frecuencia de verificación
