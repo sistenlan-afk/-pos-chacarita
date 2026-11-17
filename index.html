@@ -16,7 +16,9 @@ body{margin:0;background:#f2f2f2}
 .btn-DEV{background:#dc3545}.btn-GASTO{background:#6c757d}.btn-CIERRE{background:#c00}
 .btn-IMPRIMIR{background:#000}.btn-AGREGAR{background:#8a2be2}.btn-COBRAR{background:#198754}
 .btn-APARTAR{background:#0d6efd}.btn-X{background:#343a40}
-.btn-APARTADOS{background:#0aa2c0}   /* NUEVO: mismo estilo base .btn que BASE/Proveedores/Gasto */
+.btn-APARTADOS{background:#0aa2c0}
+.btn-INV{background:#795548}
+#alertasInv{display:none;background:#fff3cd;color:#664d03;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;border-bottom:1px solid #ffe69c}   /* NUEVO: mismo estilo base .btn que BASE/Proveedores/Gasto */
 .btn:disabled{opacity:.3;pointer-events:none}
 .card{background:#fff;border-radius:10px;padding:10px;margin:8px}
 input,select{width:100%;padding:11px;border:1px solid #ccc;border-radius:8px;margin:5px 0}
@@ -54,54 +56,21 @@ td{padding:6px;border-bottom:1px solid #eee;text-align:center}
 <body>
 <div id="alerta" class="alerta"></div>
 
-<div id="loginScreen" class="login-screen" style="display:flex;flex-direction:column;align-items:center;padding:24px 16px;background:linear-gradient(180deg,#fff0f4,#fff);min-height:100vh">
-
-  <div style="text-align:center;margin-bottom:6px">
-    <div style="font-size:28px">💄</div>
-    <h2 style="margin:4px 0;color:#a81d48;font-weight:900;letter-spacing:1px;font-size:22px">COSMETICO MAIA</h2>
-    <p style="margin:0;color:#666;font-size:13px">Ingrese PIN de 4 dígitos</p>
-  </div>
-
-  <input id="pinInput" type="password" maxlength="4" placeholder="****" readonly style="text-align:center;font-size:28px;letter-spacing:8px;width:100%;max-width:220px;padding:12px;border:2px solid #e891a8;border-radius:14px;color:#a81d48;background:#fff;box-shadow:0 4px 12px rgba(232,145,168,.2)">
-
-  <div class="keypad" style="display:grid;grid-template-columns:repeat(3, 68px);gap:12px;justify-content:center;margin:20px 0;width:100%;max-width:280px">
-    <button onclick="pressKey('1')">1</button><button onclick="pressKey('2')">2</button><button onclick="pressKey('3')">3</button>
-    <button onclick="pressKey('4')">4</button><button onclick="pressKey('5')">5</button><button onclick="pressKey('6')">6</button>
-    <button onclick="pressKey('7')">7</button><button onclick="pressKey('8')">8</button><button onclick="pressKey('9')">9</button>
-    <button onclick="clearPin()" style="background:#9aa0a6">C</button><button onclick="pressKey('0')" style="background:#fff;color:#d16a8a;border:2px solid #e891a8">0</button><button onclick="clearPin()" style="background:#d16a8a">⌫</button>
-  </div>
-
-  <style>
-    .keypad button{
-      background:linear-gradient(180deg,#e891a8,#d16a8a);
-      color:#fff;border:0;border-radius:50%;width:68px;height:68px;
-      font-size:24px;font-weight:800;cursor:pointer;
-      box-shadow:0 4px 10px rgba(209,106,138,.4);
-    }
-    .keypad button:active{ transform:scale(0.92); }
-  </style>
-
-  <!-- BOTON QUE ABRE GESTION -->
-  <button onclick="document.getElementById('panelAdmin').style.display='block'" style="margin-top:8px;background:#f1f1f1;border:1px solid #ddd;border-radius:20px;padding:7px 16px;font-size:12px;color:#555;cursor:pointer">⚙️ Gestión Admin</button>
-
-  <!-- PANEL OCULTO - AQUI YA NO SE VEN LOS USUARIOS -->
-  <div id="panelAdmin" style="display:none;width:100%;max-width:300px;margin-top:16px;background:#fff;border:1px solid #f0c2cf;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.08)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <b style="font-size:13px;color:#a81d48">Gestión Usuarios</b>
-      <button onclick="document.getElementById('panelAdmin').style.display='none'" style="border:0;background:#f0f0f0;border-radius:50%;width:24px;height:24px;cursor:pointer">✕</button>
-    </div>
-    <input id="newUserName" placeholder="Nombre" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;margin-bottom:8px">
-    <input id="newUserPin" placeholder="PIN 4 dígitos" maxlength="4" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;margin-bottom:8px">
-    <select id="newUserRol" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;margin-bottom:12px;background:#f5f5f5">
-      <option value="Cajero">Cajero</option>
-      <option value="Administrador">Administrador</option>
-    </select>
-    <button class="btn btn-f6" style="width:100%;background:#a81d48;color:#fff;border:0;border-radius:10px;padding:12px;font-weight:700" onclick="crearUsuario()">Crear Usuario</button>
-
-    <!-- LISTA OCULTA PARA QUE NO SE VEAN -->
-    <div id="listaUsuariosLogin" style="display:none"></div>
-  </div>
-
+<div id="loginScreen" class="login-screen">
+<h2>CHACARITA ARATOCA</h2><p>Ingrese PIN de 4 dígitos</p>
+<input id="pinInput" type="password" maxlength="4" placeholder="****" style="text-align:center;font-size:28px;letter-spacing:8px;width:200px" readonly>
+<div class="keypad">
+<button onclick="pressKey('1')">1</button><button onclick="pressKey('2')">2</button><button onclick="pressKey('3')">3</button>
+<button onclick="pressKey('4')">4</button><button onclick="pressKey('5')">5</button><button onclick="pressKey('6')">6</button>
+<button onclick="pressKey('7')">7</button><button onclick="pressKey('8')">8</button><button onclick="pressKey('9')">9</button>
+<button onclick="clearPin()">C</button><button onclick="pressKey('0')">0</button><button onclick="clearPin()">⌫</button>
+</div>
+<small style="margin-top:12px">Demo: Admin Diana 1234 / Cajero Carlos 0000</small>
+<div style="margin-top:20px;width:100%;max-width:300px"><b>Gestión Usuarios (Solo Admin)</b><br>
+<input id="newUserName" placeholder="Nombre"><input id="newUserPin" placeholder="PIN 4 dígitos" maxlength="4">
+<select id="newUserRol"><option value="Cajero">Cajero</option><option value="Administrador">Administrador</option></select>
+<button class="btn btn-F6" style="width:100%;margin-top:6px" onclick="crearUsuario()">Crear Usuario</button>
+<div id="listaUsuariosLogin" style="margin-top:10px;text-align:left"></div></div>
 </div>
 
 <div id="ticketPrint"></div>
@@ -116,16 +85,18 @@ td{padding:6px;border-bottom:1px solid #eee;text-align:center}
 <div class="topbar">
 <button class="btn btn-F6" onclick="abrirCliente()">Cliente F6</button>
 <button class="btn btn-F9" id="btnEntrada" onclick="verificarPermiso('ENTRADA', abrirEntrada)">Entrada F9</button>
-<button class="btn btn-F10" onclick="abrirSalida()">Salida F10</button>
+<button class="btn btn-F10" onclick="verificarPermiso('SALIDA', abrirSalida)">Salida F10</button>
 <button class="btn btn-BASE" id="btnBase" onclick="verificarPermiso('BASE', abrirBase)">BASE</button>
-<button class="btn btn-PROV" onclick="abrirProveedores()">Proveedores</button>
+<button class="btn btn-PROV" onclick="verificarPermiso('PROVEEDORES', abrirProveedores)">Proveedores</button>
 <button class="btn btn-PAGO" id="btnPago" onclick="verificarPermiso('PAGO', abrirPagoProv)">Pago Prov</button>
-<button class="btn btn-DEV" onclick="abrirDevol()">Devol Venc</button>
+<button class="btn btn-DEV" onclick="verificarPermiso('DEVOLUCION', abrirDevol)">Devol Venc</button>
 <button class="btn btn-GASTO" id="btnGasto" onclick="verificarPermiso('GASTO', abrirGasto)">Gasto</button>
+<button class="btn btn-INV" onclick="abrirInventario()">INVENTARIO</button>
 <button class="btn btn-APARTADOS" onclick="abrirApartados()">VER APARTADOS</button>
 <button class="btn btn-IMPRIMIR" onclick="abrirImprimir()">🖨️ IMPRIMIR</button>
 <button class="btn btn-CIERRE" onclick="abrirCierre()">CIERRE F8</button>
 </div>
+<div id="alertasInv" onclick="abrirInventario()"></div>
 
 <div style="padding-bottom:230px"><div class="card">
 <div style="display:flex;gap:6px">
@@ -141,13 +112,13 @@ td{padding:6px;border-bottom:1px solid #eee;text-align:center}
 <b>TOTAL: <span id="totalTxt" style="color:#ff0a54;font-size:22px">$ 0</span></b>
 Metodo:
 <select id="metodoPago" style="width:110px" onchange="calcVuelto()">
-<option>Contado</option><option>Tarjeta</option><option>NEQUI</option><option>DAVIPLATA</option><option>COMBINADO</option>
+<option>Efectivo</option><option>Tarjeta</option><option>NEQUI</option><option>DAVIPLATA</option><option>COMBINADO</option>
 </select>
 <!-- Solo visible si el método es COMBINADO: indica con qué medio digital se paga el resto -->
 <select id="metodoDigital" style="width:110px;display:none" onchange="calcVuelto()">
 <option>NEQUI</option><option>TARJETA</option><option>DAVIPLATA</option>
 </select>
-Efectivo:<input id="efectivoInput" type="number" style="width:90px" oninput="calcVuelto()">
+Efectivo:<input id="efectivoInput" type="number" min="0" style="width:90px" oninput="if(this.value<0)this.value=0;calcVuelto()">
 <span id="digitalTxt" style="background:#cfe2ff;padding:4px 8px;border-radius:6px;display:none"></span>
 <span id="vueltoTxt" style="background:#d4edda;padding:4px 8px;border-radius:6px">Vuelto: $0</span>
 </div>
@@ -155,16 +126,7 @@ Efectivo:<input id="efectivoInput" type="number" style="width:90px" oninput="cal
 <button class="btn btn-COBRAR" style="padding:14px" onclick="accionCobrar()">COBRAR F1</button>
 <button class="btn btn-APARTAR" style="padding:14px" onclick="accionApartar()">APARTAR</button>
 </div>
-<!-- DATOS PERSONAL JOEL PIE DE PAGINA -->
-
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">
-  <small id="resumenDia" style="font-size:10px"></small>
-  <span style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#7a1230">
-    Desarrollado por Ing. Joel Cogollo | Ing. de Sistemas
-    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:15px;height:15px">
-    <a href="https://wa.me/3182651261" target="_blank" style="color:#25D366;text-decoration:none">+57 3182651261</a>
-  </span>
-</div>
+<small id="resumenDia"></small>
 </div>
 
 <div id="modalImprimir" class="modal"><div class="modal-box"><h3>🖨️ Imprimir - Doble Función</h3>
@@ -181,14 +143,19 @@ Efectivo:<input id="efectivoInput" type="number" style="width:90px" oninput="cal
 <button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
 
 <div id="modalEntrada" class="modal"><div class="modal-box"><h3>Entrada F9 - Requiere Admin</h3>
-<select id="entProveedor"></select><input id="entFactura" placeholder="Factura"><input id="entCodigo" placeholder="Codigo">
-<input id="entCant" type="number" placeholder="Cant"><input id="entCosto" type="number" placeholder="Costo">
-<input id="entPrecio" type="number" placeholder="Precio Venta"><input id="entVenc" type="date">
+<select id="entProveedor"></select><input id="entFactura" placeholder="Factura">
+<input id="entCodigo" placeholder="Codigo" oninput="buscarEntrada()">
+<div id="entInfo" style="background:#fff3cd;padding:6px;border-radius:6px;font-size:12px">Escriba el código del producto</div>
+<input id="entNombre" placeholder="Nombre del producto"><input id="entLote" placeholder="Lote">
+<input id="entCant" type="number" min="1" placeholder="Cant"><input id="entCosto" type="number" min="1" placeholder="Costo">
+<input id="entPrecio" type="number" min="1" placeholder="Precio Venta">
+<label style="font-size:12px;font-weight:700">Vencimiento</label><input id="entVenc" type="date">
 <button class="btn btn-F9" style="width:100%" onclick="guardarEntrada()">Guardar</button>
 <button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
 
-<div id="modalSalida" class="modal"><div class="modal-box"><h3>Salida F10</h3>
-<input id="salCodigo" placeholder="Codigo"><input id="salCant" type="number" placeholder="Cant"><input id="salMotivo" placeholder="Motivo">
+<div id="modalSalida" class="modal"><div class="modal-box"><h3>Salida F10 - Requiere Admin</h3>
+<input id="salCodigo" placeholder="Codigo"><input id="salCant" type="number" min="1" placeholder="Cant">
+<select id="salMotivo"><option value="">-- Motivo (obligatorio) --</option><option>Merma</option><option>Daño</option><option>Consumo</option><option>Vencido</option><option>Otro</option></select>
 <button class="btn btn-F10" style="width:100%" onclick="guardarSalida()">Restar</button>
 <button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
 
@@ -198,33 +165,53 @@ Efectivo:<input id="efectivoInput" type="number" style="width:90px" oninput="cal
 <button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
 
 <div id="modalProveedores" class="modal"><div class="modal-box"><h3>Proveedores</h3>
-<input id="provNombre" placeholder="Nombre"><input id="provNit" placeholder="NIT"><input id="provTel" placeholder="Tel"><input id="provAsesor" placeholder="Asesor">
+<input id="provNombre" placeholder="Nombre"><input id="provNit" placeholder="NIT"><input id="provTel" placeholder="Tel"><input id="provAsesor" placeholder="Asesor"><input id="provDir" placeholder="Dirección">
 <button class="btn btn-PROV" style="width:100%" onclick="guardarProveedor()">Guardar</button>
 <input id="provBuscar" placeholder="Buscar" oninput="renderProveedores()"><div id="listaProv"></div>
 <button class="btn btn-X" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button></div></div>
 
 <div id="modalPagoProv" class="modal"><div class="modal-box"><h3>Pago Prov - Requiere Admin</h3>
-<select id="pagoProvSelect" onchange="cargarFacturas()"></select>
-<div id="boxFacturas" style="border:1px solid #eee;padding:6px;max-height:120px;overflow:auto"></div>
-<input id="pagoValor" type="number" placeholder="Monto">
+<select id="pagoProvSelect" onchange="facturaPagoSel=null;cargarFacturas()"></select>
+<div id="pagoDeuda" style="padding:6px;font-size:13px"></div>
+<div id="boxFacturas" style="border:1px solid #eee;padding:6px;max-height:160px;overflow:auto"></div>
+<input id="pagoValor" type="number" min="1" placeholder="Monto">
 <button class="btn btn-PAGO" style="width:100%" onclick="guardarPagoProv()">Pagar</button>
 <button class="btn btn-X" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button></div></div>
 
-<div id="modalDevol" class="modal"><div class="modal-box"><h3>Devol Venc</h3>
+<div id="modalDevol" class="modal"><div class="modal-box"><h3>Devol Venc - Requiere Admin</h3>
 <input id="devoCodigo" placeholder="Codigo" oninput="buscarDevo()"><div id="devoInfo" style="background:#fff3cd;padding:6px">Info</div>
-<input id="devoCant" type="number" placeholder="Cant"><select id="devoProv"></select>
+<input id="devoCant" type="number" min="1" placeholder="Cant"><select id="devoProv" onchange="cargarFacturasDevo()"></select>
+<select id="devoMotivo"><option value="">-- Motivo (obligatorio) --</option><option>Vencido</option><option>Dañado</option></select>
+<label style="font-size:12px;font-weight:700">Descontar del saldo de la factura:</label><select id="devoFactura"><option value="">Sin descontar</option></select>
 <button class="btn btn-DEV" style="width:100%" onclick="guardarDevol()">Registrar</button>
 <button class="btn btn-X" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button></div></div>
 
 <div id="modalGasto" class="modal"><div class="modal-box"><h3>Gasto - Requiere Admin</h3>
-<input id="gastoValor" type="number" placeholder="Monto"><input id="gastoConcepto" placeholder="Concepto">
+<input id="gastoValor" type="number" min="1" placeholder="Monto"><input id="gastoConcepto" placeholder="Concepto">
 <button class="btn btn-GASTO" style="width:100%" onclick="guardarGasto()">Registrar</button>
 <button class="btn btn-X" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button></div></div>
 
 <div id="modalCierre" class="modal"><div class="modal-box"><h3>CIERRE F8</h3>
 <div id="cierreDetalle" style="background:#f8f9fa;padding:12px;border-radius:10px"></div>
+<div id="cierreGanancia" style="background:#e7f5ff;padding:10px;border-radius:10px;margin-top:8px;font-size:13px"></div>
+<label style="font-weight:700;font-size:13px;display:block;margin-top:8px">Conteo físico: efectivo contado en el cajón</label>
+<input id="cierreConteo" type="number" min="0" placeholder="Cuente el cajón y escriba el total" oninput="calcDiferenciaCierre()">
+<div id="cierreDiferencia" style="padding:10px;border-radius:10px;font-weight:700;text-align:center"></div>
 <button class="btn btn-CIERRE" style="width:100%;margin-top:8px" onclick="hacerCierre()">CERRAR TURNO Y BLOQUEAR</button>
 <button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cerrarModales()">Cerrar</button></div></div>
+
+<div id="modalInventario" class="modal"><div class="modal-box" style="max-width:1000px"><h3>📦 Inventario</h3>
+<div id="invResumen" style="font-size:12px;margin-bottom:6px"></div>
+<div style="display:flex;gap:6px"><input id="invBuscar" placeholder="Buscar por código o nombre" oninput="renderInventario()">
+<select id="invFiltro" style="width:200px" onchange="renderInventario()"><option value="">Todos</option><option value="bajo">Stock bajo</option><option value="venc">Vencidos / por vencer</option></select></div>
+<div id="invEdit" style="display:none;background:#fff3cd;padding:8px;border-radius:8px;margin:6px 0">
+<b id="invEditTitulo"></b><input type="hidden" id="invCodigo">
+<input id="invNombre" placeholder="Nombre"><input id="invPrecio" type="number" min="1" placeholder="Precio venta"><input id="invCosto" type="number" min="1" placeholder="Costo">
+<input id="invMin" type="number" min="0" placeholder="Stock mínimo (0 = sin alerta)"><label style="font-size:12px;font-weight:700">Vencimiento</label><input id="invVenc" type="date"><input id="invLote" placeholder="Lote">
+<button class="btn btn-COBRAR" style="width:100%" onclick="guardarInventario()">Guardar cambios</button>
+<button class="btn btn-X" style="width:100%;margin-top:6px" onclick="cancelarInventario()">Cancelar</button></div>
+<div style="overflow-x:auto"><table><thead><tr><th>Código</th><th>Nombre</th><th>Stock</th><th>Mín</th><th>Costo</th><th>Precio</th><th>Vence</th><th>Lote</th><th></th></tr></thead><tbody id="tbodyInventario"></tbody></table></div>
+<button class="btn btn-X" style="width:100%;margin-top:8px" onclick="cerrarModales()">Cerrar</button></div></div>
 
 <div id="modalAuthAdmin" class="modal"><div class="modal-box"><h3>🔒 Requiere PIN Administrador</h3>
 <input id="authPin" type="password" maxlength="4" placeholder="****" style="text-align:center;font-size:24px;letter-spacing:6px">
@@ -244,7 +231,7 @@ const $id = id => document.getElementById(id);
    1. USUARIOS Y PERMISOS (sin cambios de lógica)
    ===================================================================== */
 let usuarios = cargar('v14_users', []);
-if (usuarios.length === 0) usuarios = [{id:1,nombre:"Jaider",pin_hash:hashPin("1234"),rol:"Administrador"},{id:2,nombre:"Joel",pin_hash:hashPin("5678"),rol:"Cajero"}];
+if (usuarios.length === 0) usuarios = [{id:1,nombre:"Diana",pin_hash:hashPin("1234"),rol:"Administrador"},{id:2,nombre:"Carlos",pin_hash:hashPin("0000"),rol:"Cajero"}];
 let sesionActual = cargar('v14_sesion', null);
 function hashPin(pin){ let h=0; for(let i=0;i<pin.length;i++){ h=((h<<5)-h)+pin.charCodeAt(i); h|=0; } return String(h); }
 function saveUsers(){ localStorage.setItem('v14_users', JSON.stringify(usuarios)); renderUsuariosLogin(); }
@@ -297,7 +284,7 @@ function autorizarAdmin(){
 let productos=cargar('v14_prod',[]), proveedores=cargar('v14_prov',[]);
 let clientes=cargar('v14_cli',[{nombre:"Cliente Mostrador",doc:"000"}]);
 let facturasCompra=cargar('v14_fact',[]), facturasVenta=cargar('v14_factVenta',[]);
-let pagosProv=cargar('v14_pagos',[]), gastos=cargar('v14_gastos',[]), devoluciones=cargar('v14_devo',[]);
+let pagosProv=cargar('v14_pagos',[]), gastos=cargar('v14_gastos',[]), devoluciones=cargar('v14_devo',[]), salidas=cargar('v14_salidas',[]);
 let carrito=[], consecutivo=cargar('v14_consecutivo',234);
 let base=cargar('v14_base',{valor:0});
 let clienteActual={nombre:"Cliente Mostrador",doc:"000"};
@@ -322,7 +309,7 @@ let ventasDia=normalizarCaja(cargar('v14_ventas',null));
 
 function saveAll(){
   const g={v14_prod:productos,v14_prov:proveedores,v14_cli:clientes,v14_fact:facturasCompra,v14_factVenta:facturasVenta,
-    v14_pagos:pagosProv,v14_gastos:gastos,v14_devo:devoluciones,v14_ventas:ventasDia,v14_base:base,
+    v14_pagos:pagosProv,v14_gastos:gastos,v14_devo:devoluciones,v14_salidas:salidas,v14_ventas:ventasDia,v14_base:base,
     v14_consecutivo:consecutivo,v14_pendientes:ventasPendientesSubir};
   Object.keys(g).forEach(k=>localStorage.setItem(k,JSON.stringify(g[k])));
   actualizarHeader(); renderSelects();
@@ -352,7 +339,7 @@ function sumarDigital(obj,metodo,valor){ const k=String(metodo).toUpperCase(); i
    4. (1) INDICADOR DINÁMICO DE CONEXIÓN A RENDER
    >>> CONFIGURE AQUÍ la URL de su backend en Render y una ruta liviana (ej. /health) <<<
    ===================================================================== */
-const RENDER_URL_NUBE='https://pos-chacarita.onrender.com';   // <<< ponga aquí la URL de su servicio de Render (solo si abre el POS desde otro sitio, ej. GitHub Pages)
+const RENDER_URL_NUBE='https://TU-SERVICIO.onrender.com';   // <<< ponga aquí la URL de su servicio de Render (solo si abre el POS desde otro sitio, ej. GitHub Pages)
 const RENDER_URL=location.hostname.endsWith('.onrender.com')?location.origin:RENDER_URL_NUBE;   // abierto desde Render: usa su propio dominio
 const RENDER_PING='/health';
 const PING_CADA_MS=20000;       // frecuencia de verificación
@@ -407,7 +394,8 @@ function renderSelects(){
 }
 function renderProveedores(){
   const q=($id('provBuscar')?.value||'').toLowerCase();
-  $id('listaProv').innerHTML=proveedores.filter(p=>p.nombre.toLowerCase().includes(q)).map(p=>`<div style="border:1px solid #ddd;padding:4px"><b>${esc(p.nombre)}</b> NIT:${esc(p.nit)}</div>`).join('')||'Sin prov';
+  $id('listaProv').innerHTML=proveedores.map((p,i)=>({p,i})).filter(x=>x.p.nombre.toLowerCase().includes(q)).map(({p,i})=>
+    `<div style="border:1px solid #ddd;padding:4px;cursor:pointer" onclick="cargarProveedorForm(${i})"><b>${esc(p.nombre)}</b> NIT:${esc(p.nit)} ${p.tel?'· Tel:'+esc(p.tel):''} ${p.dir?'· '+esc(p.dir):''}<br><span style="color:${deudaProv(p.nombre)>0?'#c00':'#198754'}">Se le debe: <b>${fmt(deudaProv(p.nombre))}</b></span> <small>(toque para editar)</small></div>`).join('')||'Sin prov';
 }
 function filtrarClientes(){
   const q=($id('clienteBuscar')?.value||'').toLowerCase();
@@ -419,75 +407,150 @@ function seleccionarCliente(doc){ clienteActual=clientes.find(c=>c.doc===doc)||c
 function guardarCliente(){
   const c={nombre:$id('cliNombre').value.trim(),doc:$id('cliDoc').value.trim()};
   if(!c.nombre||!c.doc) return alert('Datos');
-  clientes=clientes.filter(x=>x.doc!==c.doc); clientes.push(c); clienteActual=c; saveAll(); cerrarModales();
+  clientes=clientes.filter(x=>x.doc!==c.doc); clientes.push(c); clienteActual=c; limpiar('cliNombre','cliDoc'); saveAll(); cerrarModales();
 }
 function abrirEntrada(){ $id('modalEntrada').classList.add('show'); }
+// Al escribir el código: muestra si el producto ya existe y rellena nombre/precio/vencimiento/lote
+function buscarEntrada(){
+  const cod=$id('entCodigo').value.trim().toLowerCase(), p=productos.find(x=>x.codigo===cod), info=$id('entInfo');
+  if(!cod){ info.innerHTML='Escriba el código del producto'; return; }
+  if(p){
+    info.innerHTML=`✔ Existe: <b>${esc(p.nombre)}</b> · Stock ${p.stock} · Costo ${fmt(p.costo)} · Precio ${fmt(p.precio)}`;
+    $id('entNombre').value=p.nombre; $id('entPrecio').value=p.precio; $id('entVenc').value=p.vencimiento||''; $id('entLote').value=p.lote||''; entAutofill=true;
+  } else {
+    info.innerHTML='🆕 Producto NUEVO: escriba el nombre';
+    if(entAutofill){ limpiar('entNombre','entPrecio','entVenc','entLote'); entAutofill=false; }
+  }
+}
 function guardarEntrada(){
   const prov=$id('entProveedor').value, factura=$id('entFactura').value.trim(), codigo=$id('entCodigo').value.trim().toLowerCase();
-  const cant=parseInt($id('entCant').value)||0, costo=parseInt($id('entCosto').value)||0, precio=parseInt($id('entPrecio').value)||0;
-  if(!prov||!factura||!codigo||!cant||!costo) return alert('Faltan');
+  const nombre=$id('entNombre').value.trim(), lote=$id('entLote').value.trim(), venc=$id('entVenc').value;
+  const cant=parseInt($id('entCant').value)||0, costo=parseInt($id('entCosto').value)||0;
+  const precioTxt=$id('entPrecio').value.trim(), precio=parseInt(precioTxt)||0;
   const p=productos.find(x=>x.codigo===codigo);
-  if(p){ p.stock+=cant; p.costo=costo; if(precio) p.precio=precio; }
-  else productos.push({codigo,nombre:codigo,stock:cant,costo,precio:precio||Math.round(costo*1.4),vencimiento:$id('entVenc').value||'2026-12-31',proveedor:prov});
+  if(!prov||!factura||!codigo) return alert('Faltan');
+  if(!p&&!nombre) return alert('Falta nombre');
+  if(cant<=0||costo<=0) return alert('Cant y Costo mayor a 0');
+  if(precioTxt!==''&&precio<=0) return alert('Precio mayor a 0');
+  const quien=quienSoy(), ahora=new Date().toLocaleString();
+  if(p){
+    p.stock+=cant; p.costo=costo; if(precio) p.precio=precio;
+    if(nombre) p.nombre=nombre; if(venc) p.vencimiento=venc; if(lote) p.lote=lote;     // actualiza vencimiento/lote del producto existente
+    p.ultimaEntradaPor=quien; p.ultimaEntradaFecha=ahora;
+  } else productos.push({codigo,nombre,stock:cant,costo,precio:precio||Math.round(costo*1.4),vencimiento:venc,lote,proveedor:prov,ultimaEntradaPor:quien,ultimaEntradaFecha:ahora});
   const f=facturasCompra.find(x=>x.numero===factura&&x.proveedor===prov);
-  if(f){ f.total+=cant*costo; f.saldo+=cant*costo; }
-  else facturasCompra.push({numero:factura,proveedor:prov,total:cant*costo,saldo:cant*costo,fecha:new Date().toLocaleDateString()});
-  saveAll(); cerrarModales();
+  if(f){ f.total+=cant*costo; f.saldo=saldoFact(f)+cant*costo; }
+  else facturasCompra.push({numero:factura,proveedor:prov,total:cant*costo,saldo:cant*costo,fecha:new Date().toLocaleDateString(),registradoPor:quien});
+  limpiar('entFactura','entCodigo','entNombre','entLote','entCant','entCosto','entPrecio','entVenc'); entAutofill=false; buscarEntrada();
+  saveAll(); cerrarModales(); mostrarAlerta('Entrada OK','#198754');
 }
 function abrirSalida(){ $id('modalSalida').classList.add('show'); }
 function guardarSalida(){
-  const codigo=$id('salCodigo').value.trim().toLowerCase(), cant=parseInt($id('salCant').value)||0;
-  if(!codigo||!cant) return alert('Faltan');
+  const codigo=$id('salCodigo').value.trim().toLowerCase(), cant=parseInt($id('salCant').value)||0, motivo=$id('salMotivo').value;
+  if(!codigo||cant<=0) return alert('Faltan');
+  if(!motivo) return alert('Falta motivo');
   const p=productos.find(x=>x.codigo===codigo); if(!p) return alert('No existe'); if(p.stock<cant) return alert('Stock insuf');
-  p.stock-=cant; saveAll(); cerrarModales();
+  p.stock-=cant;
+  salidas.push({id:'SAL-'+Date.now(),fecha:new Date().toLocaleString(),codigo,nombre:p.nombre,cant,motivo,usuario:quienSoy()});   // registro de la salida
+  limpiar('salCodigo','salCant','salMotivo'); saveAll(); cerrarModales(); mostrarAlerta('Salida OK','#198754');
 }
 function abrirProveedores(){ $id('modalProveedores').classList.add('show'); }
+function cargarProveedorForm(i){
+  const p=proveedores[i]; if(!p) return;
+  $id('provNombre').value=p.nombre||''; $id('provNit').value=p.nit||''; $id('provTel').value=p.tel||''; $id('provAsesor').value=p.asesor||''; $id('provDir').value=p.dir||'';
+}
 function guardarProveedor(){
-  const p={nombre:$id('provNombre').value.trim(),nit:$id('provNit').value.trim(),tel:$id('provTel').value.trim(),asesor:$id('provAsesor').value.trim()};
+  const p={nombre:$id('provNombre').value.trim(),nit:$id('provNit').value.trim(),tel:$id('provTel').value.trim(),asesor:$id('provAsesor').value.trim(),dir:$id('provDir').value.trim()};
   if(!p.nombre||!p.nit) return alert('Datos');
-  proveedores=proveedores.filter(x=>x.nit!==p.nit); proveedores.push(p); saveAll();
+  proveedores=proveedores.filter(x=>x.nit!==p.nit); proveedores.push(p); limpiar('provNombre','provNit','provTel','provAsesor','provDir'); saveAll();
 }
 function abrirDevol(){ $id('modalDevol').classList.add('show'); }
 function buscarDevo(){
   const cod=$id('devoCodigo').value.trim().toLowerCase(), p=productos.find(x=>x.codigo===cod);
-  $id('devoInfo').innerHTML=p?`<b>${esc(p.nombre)}</b> Stock:${p.stock} Vence:${esc(p.vencimiento)}`:'No encontrado';
+  $id('devoInfo').innerHTML=p?`<b>${esc(p.nombre)}</b> Stock:${p.stock} Costo:${fmt(p.costo)}<br>Vence: ${esc(p.vencimiento||'—')} ${badgeVenc(p.vencimiento)}${p.lote?' · Lote '+esc(p.lote):''}`:'No encontrado';
+  if(p&&p.proveedor&&proveedores.some(x=>x.nombre===p.proveedor)) $id('devoProv').value=p.proveedor;
+  cargarFacturasDevo();
+}
+// Facturas del proveedor con saldo: por defecto la más antigua; se puede escoger otra o "Sin descontar"
+function cargarFacturasDevo(){
+  const prov=$id('devoProv').value, sel=$id('devoFactura');
+  const fs=facturasCompra.filter(f=>f.proveedor===prov&&saldoFact(f)>0);
+  sel.innerHTML='<option value="">Sin descontar</option>'+fs.map(f=>`<option value="${esc(f.numero)}">Fact ${esc(f.numero)} · Saldo ${fmt(saldoFact(f))}</option>`).join('');
+  if(fs.length) sel.value=String(fs[0].numero);
 }
 function guardarDevol(){
   const codigo=$id('devoCodigo').value.trim().toLowerCase(), cant=parseInt($id('devoCant').value)||0, prov=$id('devoProv').value;
-  if(!codigo||!cant||!prov) return alert('Faltan');
+  const motivo=$id('devoMotivo').value, facNum=$id('devoFactura').value;
+  if(!codigo||cant<=0||!prov) return alert('Faltan');
+  if(!motivo) return alert('Falta motivo');
   const p=productos.find(x=>x.codigo===codigo); if(!p||p.stock<cant) return alert('Stock');
-  p.stock-=cant; devoluciones.push({codigo,cant,proveedor:prov,fecha:new Date().toLocaleString()}); saveAll(); alert('Devolucion OK');
+  const valor=cant*(Number(p.costo)||0);                       // VALOR = cant * costo
+  p.stock-=cant;
+  let descontado=0, saldoNuevo=null;
+  const f=facNum?facturasCompra.find(x=>String(x.numero)===facNum&&x.proveedor===prov):null;
+  if(f){ const saldo=saldoFact(f); descontado=Math.min(valor,saldo); f.saldo=saldo-descontado; saldoNuevo=f.saldo; }   // descuenta del saldo de la factura
+  const dev={numero:devoluciones.length+1,codigo,nombre:p.nombre,lote:p.lote||'',vencimiento:p.vencimiento||'',cant,costo:p.costo,valor,motivo,
+    proveedor:prov,factura:f?f.numero:'',descontado,saldoFactura:saldoNuevo,usuario:quienSoy(),fecha:new Date().toLocaleString()};
+  devoluciones.push(dev);
+  limpiar('devoCodigo','devoCant','devoMotivo'); $id('devoInfo').innerHTML='Info'; saveAll(); cerrarModales(); alert('Devolucion OK');
+  if(confirm('¿Imprimir la nota de devolución para el proveedor?')) imprimirNotaDevolucion(dev);
 }
+function construirHTMLNotaDevolucion(d){
+  return `${cabeceraTk(configNegocio)}
+  <div style="text-align:center;font-weight:bold;margin-top:6px">NOTA DE DEVOLUCIÓN #${String(d.numero).padStart(4,'0')}</div>
+  <div style="font-size:12px">Fecha: ${esc(d.fecha)}<br>Proveedor: <b>${esc(d.proveedor)}</b><br>Registró: ${esc(d.usuario)}</div>
+  <div style="border-top:1px dashed #000;border-bottom:1px dashed #000;padding:6px 0;margin-top:6px">
+  ${filaTk('Producto:',esc(d.nombre))}${filaTk('Código:',esc(d.codigo))}${d.lote?filaTk('Lote:',esc(d.lote)):''}${filaTk('Vencimiento:',esc(d.vencimiento||'—'))}
+  ${filaTk('Motivo:',esc(d.motivo))}${filaTk('Cantidad:',d.cant)}${filaTk('Costo unitario:',fmt(d.costo))}</div>
+  <div style="padding-top:6px">${filaTk('VALOR DEVUELTO:',fmt(d.valor),true)}
+  ${d.factura!==''?filaTk('Descontado de factura '+esc(d.factura)+':',fmt(d.descontado))+filaTk('Nuevo saldo factura:',fmt(d.saldoFactura)):'<div>Sin descuento a factura</div>'}</div>
+  <div style="margin-top:28px;display:flex;justify-content:space-between;font-size:11px"><span>_________________<br>Entrega</span><span>_________________<br>Recibe proveedor</span></div>`;
+}
+function imprimirNotaDevolucion(d){ imprimirHTML(construirHTMLNotaDevolucion(d)); }
 
 /* =====================================================================
    6. (5) BASE / PAGO PROV / GASTO  → todos alimentan calcularCaja()
    ===================================================================== */
 function abrirBase(){ $id('modalBase').classList.add('show'); }
 function guardarBase(){
-  const v=parseInt($id('baseInput').value)||0; if(!v) return alert('Monto');
-  base.valor=v; saveAll(); cerrarModales();          // saveAll → actualizarHeader → recalcula "Caja esperada"
+  const v=parseInt($id('baseInput').value)||0; if(v<=0) return alert('Monto');
+  base.valor=v; $id('baseInput').value=''; saveAll(); cerrarModales();          // saveAll → actualizarHeader → recalcula "Caja esperada"
 }
 function abrirPagoProv(){ $id('modalPagoProv').classList.add('show'); cargarFacturas(); }
 function cargarFacturas(){
   const prov=$id('pagoProvSelect').value, fact=facturasCompra.filter(f=>!prov||f.proveedor===prov);
-  $id('boxFacturas').innerHTML=fact.map(f=>`<div style="border:1px solid #eee;padding:4px">Fact:${esc(f.numero)} Saldo:${fmt(f.saldo||f.total)} <button onclick="$id('pagoValor').value=${f.saldo||f.total}">Usar</button></div>`).join('')||'Sin facturas';
+  if(facturaPagoSel&&!fact.includes(facturaPagoSel)) facturaPagoSel=null;
+  $id('pagoDeuda').innerHTML=prov?`Se le debe a <b>${esc(prov)}</b>: <b style="color:#c00">${fmt(deudaProv(prov))}</b>`:'Escoja un proveedor o una factura';
+  $id('boxFacturas').innerHTML=fact.map(f=>{
+    const s=saldoFact(f), elegida=f===facturaPagoSel;
+    return `<div style="border:1px solid ${elegida?'#198754':'#eee'};background:${elegida?'#d4edda':'#fff'};padding:4px">Fact:${esc(f.numero)} (${esc(f.proveedor)}) Saldo:${fmt(s)} ${s>0?`<button onclick="usarFacturaPago(${facturasCompra.indexOf(f)})">${elegida?'✔ Elegida':'Usar'}</button>`:'<b style="color:#198754">Pagada</b>'}</div>`;
+  }).join('')||'Sin facturas';
+}
+// "Usar": guarda QUÉ factura se está pagando y propone su saldo como monto
+function usarFacturaPago(i){
+  const f=facturasCompra[i]; if(!f) return;
+  facturaPagoSel=f; $id('pagoProvSelect').value=f.proveedor; $id('pagoValor').value=saldoFact(f); cargarFacturas();
 }
 function guardarPagoProv(){
-  const prov=$id('pagoProvSelect').value, valor=parseInt($id('pagoValor').value)||0;
-  if(!prov||!valor) return alert('Datos');
+  const valor=parseInt($id('pagoValor').value)||0;
+  const prov=facturaPagoSel?facturaPagoSel.proveedor:$id('pagoProvSelect').value;
+  if(!prov||valor<=0) return alert('Datos');
+  const pendientes=facturasCompra.filter(f=>f.proveedor===prov&&saldoFact(f)>0);
+  if(!facturaPagoSel&&pendientes.length>1) return alert('Escoja la factura con Usar');
+  const fact=facturaPagoSel||pendientes[0];
+  if(fact&&valor>saldoFact(fact)) return alert('Mayor al saldo');
   if(!advertirEgreso(valor)) return;
-  const fact=facturasCompra.find(f=>f.proveedor===prov&&(f.saldo||f.total)>0);
-  if(fact){ fact.saldo-=valor; if(fact.saldo<0) fact.saldo=0; }
-  pagosProv.push({proveedor:prov,valor,fecha:new Date().toLocaleString()});   // egreso de efectivo
-  saveAll(); cargarFacturas();
+  if(fact) fact.saldo=saldoFact(fact)-valor;
+  pagosProv.push({proveedor:prov,valor,fecha:new Date().toLocaleString(),factura:fact?fact.numero:'',usuario:quienSoy()});   // egreso de efectivo
+  facturaPagoSel=null; $id('pagoValor').value=''; saveAll(); cargarFacturas(); mostrarAlerta('Pago OK','#198754');
 }
 function abrirGasto(){ $id('modalGasto').classList.add('show'); }
 function guardarGasto(){
   const valor=parseInt($id('gastoValor').value)||0, concepto=$id('gastoConcepto').value.trim();
-  if(!valor||!concepto) return alert('Faltan');
+  if(valor<=0||!concepto) return alert('Faltan');
   if(!advertirEgreso(valor)) return;
-  gastos.push({valor,concepto,fecha:new Date().toLocaleString()});             // egreso de efectivo
-  saveAll(); cerrarModales();
+  gastos.push({valor,concepto,fecha:new Date().toLocaleString(),usuario:quienSoy()});             // egreso de efectivo
+  limpiar('gastoValor','gastoConcepto'); saveAll(); cerrarModales();
 }
 
 /* =====================================================================
@@ -499,6 +562,7 @@ function accionAgregar(){
   const p=productos.find(x=>x.codigo===q||x.nombre.toLowerCase().includes(q));
   if(!p){ alert('Producto no encontrado'); return; }
   const ex=carrito.find(x=>x.codigo===p.codigo);
+  if(p.stock<=(ex?ex.cant:0)) return alert('Stock insuf');          // no deja agregar más de lo que hay
   if(ex) ex.cant++; else carrito.push({...p,cant:1});
   renderCarrito(); $id('codigoInput').value='';
 }
@@ -874,7 +938,7 @@ async function sincronizarNube(){
   const primera=!localStorage.getItem('v14_sync_inicial');
   const enviadas=primera?facturasVenta.slice():ventasPendientesSubir.slice();
   const payload={productos,proveedores,clientes,facturasCompra,facturasVenta:enviadas,pagosProv,gastos,devoluciones,apartados,
-    caja:{ventasDia,base,consecutivo}};
+    salidas,caja:{ventasDia,base,consecutivo,ultimoCierre:ultimoCierreNum}};
   const cuerpo=JSON.stringify(payload);
   try{
     // cierres que no alcanzaron a subirse
@@ -902,8 +966,8 @@ async function cargarDesdeNube(){
     if(!(n.productos||[]).length&&!(n.facturasVenta||[]).length&&!(n.apartados||[]).length){ programarSync(); return; }
     productos=n.productos||[]; proveedores=n.proveedores||[]; if((n.clientes||[]).length) clientes=n.clientes;
     facturasCompra=n.facturasCompra||[]; facturasVenta=n.facturasVenta||[]; pagosProv=n.pagosProv||[]; gastos=n.gastos||[];
-    devoluciones=n.devoluciones||[]; apartados=n.apartados||[];
-    if(n.caja){ ventasDia=normalizarCaja(n.caja.ventasDia); base=n.caja.base||base; consecutivo=Math.max(consecutivo,n.caja.consecutivo||0); }
+    devoluciones=n.devoluciones||[]; apartados=n.apartados||[]; salidas=n.salidas||[];
+    if(n.caja){ ventasDia=normalizarCaja(n.caja.ventasDia); base=n.caja.base||base; consecutivo=Math.max(consecutivo,n.caja.consecutivo||0); ultimoCierreNum=n.caja.ultimoCierre||0; }
     localStorage.setItem('v14_sync_inicial','1'); aptGuardar(); saveAll();
     mostrarAlerta('Datos cargados desde la nube','#198754');
   }catch(e){ console.warn('No se pudo cargar de la nube:',e.message); }
@@ -915,8 +979,157 @@ function enviarCierreNube(){
   const datos={fecha:new Date().toLocaleString(),cajero:sesionActual?sesionActual.nombre:null,base:base.valor,ventasDia:JSON.parse(JSON.stringify(ventasDia)),
     efectivoEsperado:c.efectivoEsperado,totalPagosProv:c.totalPagosProv,totalGastos:c.totalGastos,digitalVentas:c.digitalVentas,digitalAnticipos:c.digitalAnticipos,
     gastosDetalle:[...gastos],pagosProvDetalle:[...pagosProv]};
+  if(cierreExtra){ Object.assign(datos,cierreExtra); cierreExtra=null; }          // conteo físico, diferencia y ganancia
+  cierresHist.push(datos); if(cierresHist.length>200) cierresHist.shift(); localStorage.setItem('v14_cierres_hist',JSON.stringify(cierresHist));   // resumen local
+  ultimoCierreNum=consecutivo; localStorage.setItem('v14_ultimoCierre',JSON.stringify(ultimoCierreNum));
   cierresPendientes.push(datos); localStorage.setItem('v14_cierres_pend',JSON.stringify(cierresPendientes));
   sincronizarNube();
+}
+
+/* =====================================================================
+   13b. MEJORAS V17: utilidades, semáforo de vencimiento, inventario,
+        cierre con conteo físico y bloqueo de PIN.
+   (Se agregan como funciones nuevas o "envolturas": no se tocan calcularCaja,
+    accionCobrar, calcularPago ni validarPin/autorizarAdmin originales.)
+   ===================================================================== */
+let cierresHist=cargar('v14_cierres_hist',[]), ultimoCierreNum=cargar('v14_ultimoCierre',0), cierreExtra=null;
+let facturaPagoSel=null, entAutofill=false;
+const saldoFact=f=>(f.saldo===undefined||f.saldo===null)?f.total:f.saldo;     // OJO: saldo 0 = pagada (antes "0||total" la mostraba como deuda completa)
+const deudaProv=nombre=>facturasCompra.filter(f=>f.proveedor===nombre).reduce((s,f)=>s+saldoFact(f),0);
+const quienSoy=()=>sesionActual?sesionActual.nombre:'';
+const limpiar=(...ids)=>ids.forEach(id=>{ const e=$id(id); if(e) e.value=''; });
+
+/* ---------- Semáforo: Rojo = vencido · Amarillo = vence en 15 días o menos · Verde = bien ---------- */
+function semaforoVenc(v){
+  if(!v) return {nivel:'gris',color:'#6c757d',txt:'Sin fecha',dias:null};
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+  const d=Math.round((new Date(v+'T00:00:00')-hoy)/86400000);
+  if(isNaN(d)) return {nivel:'gris',color:'#6c757d',txt:'Sin fecha',dias:null};
+  if(d<0) return {nivel:'rojo',color:'#dc3545',txt:'Vencido',dias:d};
+  if(d<=15) return {nivel:'amarillo',color:'#ffc107',txt:d===0?'Vence hoy':`Vence en ${d} d`,dias:d};
+  return {nivel:'verde',color:'#198754',txt:'Bien',dias:d};
+}
+function badgeVenc(v){ const s=semaforoVenc(v); return `<span style="background:${s.color};color:${s.nivel==='amarillo'?'#000':'#fff'};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">${s.txt}</span>`; }
+
+/* ---------- Inventario: ver, buscar, editar y alertas ---------- */
+function estadoInv(p){ const s=semaforoVenc(p.vencimiento); return {s,bajo:Number(p.minimo)>0&&p.stock<=Number(p.minimo),venc:p.stock>0&&(s.nivel==='rojo'||s.nivel==='amarillo')}; }
+function abrirInventario(){ $id('modalInventario').classList.add('show'); cancelarInventario(); renderInventario(); }
+function renderInventario(){
+  const q=($id('invBuscar').value||'').trim().toLowerCase(), filtro=$id('invFiltro').value;
+  const todos=productos.map((p,i)=>({p,i,e:estadoInv(p)}));
+  const lista=todos.filter(x=>(!q||String(x.p.codigo).toLowerCase().includes(q)||String(x.p.nombre).toLowerCase().includes(q))&&(filtro===''||(filtro==='bajo'&&x.e.bajo)||(filtro==='venc'&&x.e.venc)))
+    .sort((a,b)=>String(a.p.nombre).localeCompare(String(b.p.nombre)));
+  $id('tbodyInventario').innerHTML=lista.map(({p,i,e})=>`<tr><td>${esc(p.codigo)}</td>
+    <td style="text-align:left">${esc(p.nombre)}${p.nombre===p.codigo?' <small style="color:#c00">⚠ sin nombre</small>':''}</td>
+    <td><b style="color:${e.bajo?'#c00':'inherit'}">${p.stock}</b></td><td>${Number(p.minimo)>0?p.minimo:'—'}</td><td>${fmt(p.costo)}</td><td>${fmt(p.precio)}</td>
+    <td>${esc(p.vencimiento||'—')}<br>${badgeVenc(p.vencimiento)}</td><td>${esc(p.lote||'—')}</td>
+    <td><button class="btn btn-F9" onclick="verificarPermiso('EDITAR',()=>editarProducto(${i}))">Editar</button></td></tr>`).join('')||'<tr><td colspan="9">Sin productos</td></tr>';
+  const bajo=todos.filter(x=>x.e.bajo).length, ven=todos.filter(x=>x.p.stock>0&&x.e.s.nivel==='rojo').length, por=todos.filter(x=>x.p.stock>0&&x.e.s.nivel==='amarillo').length;
+  $id('invResumen').innerHTML=`Productos: <b>${productos.length}</b> · Stock bajo: <b style="color:#c00">${bajo}</b> · 🔴 Vencidos: <b>${ven}</b> · 🟡 Por vencer (15 d): <b>${por}</b>`;
+}
+function editarProducto(i){
+  const p=productos[i]; if(!p) return;
+  $id('modalInventario').classList.add('show');
+  $id('invEdit').style.display='block'; $id('invEditTitulo').innerText='Editando: '+p.codigo;
+  $id('invCodigo').value=p.codigo; $id('invNombre').value=p.nombre||''; $id('invPrecio').value=p.precio||''; $id('invCosto').value=p.costo||'';
+  $id('invMin').value=p.minimo||''; $id('invVenc').value=p.vencimiento||''; $id('invLote').value=p.lote||'';
+}
+function cancelarInventario(){ $id('invEdit').style.display='none'; }
+function guardarInventario(){
+  const p=productos.find(x=>x.codigo===$id('invCodigo').value); if(!p) return;
+  const nombre=$id('invNombre').value.trim(), precio=parseInt($id('invPrecio').value)||0, costo=parseInt($id('invCosto').value)||0, min=parseInt($id('invMin').value)||0;
+  if(!nombre) return alert('Falta nombre');
+  if(precio<=0||costo<=0) return alert('Precio y Costo mayor a 0');
+  if(min<0) return alert('Minimo invalido');
+  p.nombre=nombre; p.precio=precio; p.costo=costo; p.minimo=min; p.vencimiento=$id('invVenc').value; p.lote=$id('invLote').value.trim();   // el stock solo cambia con F9/F10/Devolución
+  cancelarInventario(); saveAll(); renderInventario(); mostrarAlerta('Producto actualizado','#198754');
+}
+function renderAlertasInv(){
+  const el=$id('alertasInv'); if(!el) return;
+  if(!sesionActual){ el.style.display='none'; return; }
+  let bajo=0,ven=0,por=0;
+  productos.forEach(p=>{ const e=estadoInv(p); if(e.bajo) bajo++; if(p.stock>0&&e.s.nivel==='rojo') ven++; if(p.stock>0&&e.s.nivel==='amarillo') por++; });
+  const t=[]; if(bajo) t.push(`⚠️ Stock bajo: ${bajo}`); if(ven) t.push(`🔴 Vencidos: ${ven}`); if(por) t.push(`🟡 Por vencer (15 d): ${por}`);
+  el.style.display=t.length?'block':'none'; el.innerHTML=t.join(' · ')+' — toque para ver el inventario';
+}
+if(!actualizarHeader.__v17){ const _hdr=actualizarHeader; actualizarHeader=function(){ _hdr.apply(this,arguments); renderAlertasInv(); }; actualizarHeader.__v17=true; }
+
+/* ---------- CIERRE F8: conteo físico, diferencia y ganancia del turno ---------- */
+function gananciaTurno(){   // ventas del turno = facturas posteriores al último cierre (cuadra con "Ventas del día")
+  let ventas=0,costo=0;
+  facturasVenta.filter(f=>f.numero>ultimoCierreNum).forEach(f=>(f.items||[]).forEach(i=>{
+    const cant=Number(i.cant)||0, pr=productos.find(x=>x.codigo===i.codigo);
+    const c=(i.costo!==undefined&&i.costo!==null)?Number(i.costo):(pr?Number(pr.costo)||0:0);
+    ventas+=(Number(i.precio)||0)*cant; costo+=c*cant;
+  }));
+  return {ventas,costo,ganancia:ventas-costo};
+}
+function renderGananciaCierre(){
+  const g=gananciaTurno(), u=cierresHist[cierresHist.length-1];
+  $id('cierreGanancia').innerHTML=`<b>GANANCIA DEL DÍA (estimada)</b>
+  <div style="display:flex;justify-content:space-between"><span>Ventas</span><b>${fmt(g.ventas)}</b></div>
+  <div style="display:flex;justify-content:space-between"><span>− Costo de lo vendido</span><b style="color:#c00">${fmt(g.costo)}</b></div>
+  <div style="display:flex;justify-content:space-between"><span>= Ganancia</span><b style="color:${g.ganancia>=0?'green':'#c00'}">${fmt(g.ganancia)}</b></div>
+  ${u?`<div style="margin-top:6px;font-size:11px;color:#555">Último cierre: ${esc(u.fecha)} · esperado ${fmt(u.efectivoEsperado)}${u.conteoFisico!==undefined?` · contado ${fmt(u.conteoFisico)} · dif. ${u.diferencia<0?'−':''}${fmt(Math.abs(u.diferencia))}`:''}</div>`:''}`;
+}
+function calcDiferenciaCierre(){
+  const el=$id('cierreDiferencia'), raw=$id('cierreConteo').value;
+  if(raw===''){ el.style.background='#e9ecef'; el.style.color='#495057'; el.innerHTML='Escriba el efectivo contado para ver la diferencia'; return; }
+  const dif=(parseInt(raw)||0)-calcularCaja().efectivoEsperado;
+  if(dif===0){ el.style.background='#d4edda'; el.style.color='#155724'; el.innerHTML='CUADRADO ✔ Diferencia $0'; }
+  else if(dif<0){ el.style.background='#f8d7da'; el.style.color='#842029'; el.innerHTML='FALTANTE '+fmt(-dif); }
+  else { el.style.background='#fff3cd'; el.style.color='#664d03'; el.innerHTML='SOBRANTE '+fmt(dif); }
+}
+if(!abrirCierre.__v17){ const _ac=abrirCierre; abrirCierre=function(){ _ac.apply(this,arguments); $id('cierreConteo').value=''; renderGananciaCierre(); calcDiferenciaCierre(); }; abrirCierre.__v17=true; }
+if(!hacerCierre.__v17){
+  const _hc=hacerCierre;
+  hacerCierre=function(){
+    const raw=$id('cierreConteo').value;
+    if(raw==='') return alert('Falta conteo');
+    const conteo=parseInt(raw); if(!(conteo>=0)) return alert('Conteo invalido');
+    const g=gananciaTurno();
+    cierreExtra={conteoFisico:conteo,diferencia:conteo-calcularCaja().efectivoEsperado,ventasBrutas:g.ventas,costoVendido:g.costo,ganancia:g.ganancia};   // lo guarda enviarCierreNube()
+    return _hc.apply(this,arguments);       // hacerCierre original, sin cambios
+  };
+  hacerCierre.__v17=true;
+}
+
+/* ---------- SEGURIDAD: bloqueo por intentos fallidos de PIN (login y autorización de Admin) ---------- */
+const PIN_MAX_INTENTOS=3, PIN_BLOQUEO_MS=60000;         // 3 fallos → bloqueo de 60 segundos (ajustable aquí)
+let pinLock=cargar('v14_pin_lock',{fallos:0,hasta:0});
+const pinGuardar=()=>localStorage.setItem('v14_pin_lock',JSON.stringify(pinLock));
+function pinBloqueado(){
+  if(Date.now()<pinLock.hasta){ mostrarAlerta(`Demasiados intentos. Espere ${Math.ceil((pinLock.hasta-Date.now())/1000)} s`); return true; }
+  return false;
+}
+function pinFallo(){
+  pinLock.fallos++;
+  if(pinLock.fallos>=PIN_MAX_INTENTOS){ pinLock={fallos:0,hasta:Date.now()+PIN_BLOQUEO_MS}; mostrarAlerta(`PIN bloqueado ${PIN_BLOQUEO_MS/1000} s por intentos fallidos`); }
+  pinGuardar();
+}
+function pinOk(){ pinLock={fallos:0,hasta:0}; pinGuardar(); }
+if(!validarPin.__v17){
+  const _vp=validarPin;
+  validarPin=function(){
+    const pin=$id('pinInput').value;
+    if(pin.length!==4) return _vp.apply(this,arguments);
+    if(pinBloqueado()){ clearPin(); return; }
+    _vp.apply(this,arguments);                // validarPin original, sin cambios
+    if(sesionActual) pinOk(); else pinFallo();
+  };
+  validarPin.__v17=true;
+}
+if(!autorizarAdmin.__v17){
+  const _aa=autorizarAdmin;
+  autorizarAdmin=function(){
+    const pin=$id('authPin').value;
+    if(pin.length!==4) return _aa.apply(this,arguments);
+    if(pinBloqueado()) return;
+    const fn=accionPendiente;
+    _aa.apply(this,arguments);                // autorizarAdmin original, sin cambios
+    if(fn&&accionPendiente===null) pinOk(); else pinFallo();
+  };
+  autorizarAdmin.__v17=true;
 }
 
 /* =====================================================================
