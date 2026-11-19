@@ -80,6 +80,9 @@ function ddl() {
   sentencias.push(`ALTER TABLE cierres ADD COLUMN IF NOT EXISTS cajero text`);
   sentencias.push(`ALTER TABLE cierres ADD COLUMN IF NOT EXISTS efectivo_esperado numeric`);
   sentencias.push(`ALTER TABLE cierres ADD COLUMN IF NOT EXISTS datos jsonb`);
+  // CORREGIDO: la tabla vieja solo dejaba UN cierre por fecha. Se quita esa restricción para permitir varios cierres el mismo día.
+  // No borra datos; si la restricción no existe, no hace nada.
+  sentencias.push(`ALTER TABLE cierres DROP CONSTRAINT IF EXISTS cierres_fecha_key`);
 
   return sentencias;
 }
