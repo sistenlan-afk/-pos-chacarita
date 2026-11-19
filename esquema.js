@@ -55,7 +55,17 @@ function ddl() {
     return `CREATE TABLE IF NOT EXISTS ${t.nombre} (${cols}, creado timestamptz DEFAULT now(), actualizado timestamptz DEFAULT now(), PRIMARY KEY (${t.clave.join(', ')}))`;
   });
 
+  // CORREGIDO: si la tabla ya existía (versión vieja) y le faltan columnas, se agregan.
+  // Si la columna ya existe no hace nada y no toca ningún dato.
+  TABLAS.forEach(t => {
+    t.cols.forEach(([n, tipo]) => sentencias.push(`ALTER TABLE ${t.nombre} ADD COLUMN IF NOT EXISTS ${n} ${tipo}`));
+    sentencias.push(`ALTER TABLE ${t.nombre} ADD COLUMN IF NOT EXISTS creado timestamptz DEFAULT now()`);
+    sentencias.push(`ALTER TABLE ${t.nombre} ADD COLUMN IF NOT EXISTS actualizado timestamptz DEFAULT now()`);
+  });
+
   sentencias.push(`CREATE TABLE IF NOT EXISTS caja_estado (id integer PRIMARY KEY, datos jsonb, actualizado timestamptz DEFAULT now())`);
+  sentencias.push(`ALTER TABLE caja_estado ADD COLUMN IF NOT EXISTS datos jsonb`);
+  sentencias.push(`ALTER TABLE caja_estado ADD COLUMN IF NOT EXISTS actualizado timestamptz DEFAULT now()`);
 
   sentencias.push(`CREATE TABLE IF NOT EXISTS cierres (
     id serial PRIMARY KEY,
@@ -65,6 +75,8 @@ function ddl() {
     datos jsonb
   )`);
 
+  sentencias.push(`ALTER TABLE cierres ADD COLUMN IF NOT EXISTS creado timestamptz DEFAULT now()`);
+  sentencias.push(`ALTER TABLE cierres ADD COLUMN IF NOT EXISTS fecha text`);
   sentencias.push(`ALTER TABLE cierres ADD COLUMN IF NOT EXISTS cajero text`);
   sentencias.push(`ALTER TABLE cierres ADD COLUMN IF NOT EXISTS efectivo_esperado numeric`);
   sentencias.push(`ALTER TABLE cierres ADD COLUMN IF NOT EXISTS datos jsonb`);
