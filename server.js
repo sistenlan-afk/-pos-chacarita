@@ -23,11 +23,43 @@ pool.on('error', e => console.error('Error en conexión inactiva:', e.message));
 app.use(cors({ origin: process.env.ALLOWED_ORIGIN || true, allowedHeaders: ['Content-Type', 'x-api-key'] }));
 app.use(express.json({ limit: '10mb' }));
 
+/* ---------- MIGRACIÓN ÚNICA: tablas nuevas y limpias ----------
+   Las tablas viejas NO se borran: se renombran a "<tabla>_viejo_AAAAMMDD" y se crean tablas nuevas.
+   Se anota en la tabla "migraciones" para que pase UNA SOLA VEZ (no se repite en cada arranque). */
+async function migrarTablasNuevas() {
+  const MARCA = 'esquema_limpio_v1';
+  await pool.query('CREATE TABLE IF NOT EXISTS migraciones (nombre text PRIMARY KEY, creado timestamptz DEFAULT now())');
+  const ya = await pool.query('SELECT 1 FROM migraciones WHERE nombre = $1', [MARCA]);
+  if (ya.rowCount) return;
+  const c = await pool.connect();
+  try {
+    await c.query('BEGIN');
+    const sufijo = '_viejo_' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const nombres = [...TABLAS.map(t => t.nombre), 'caja_estado', 'cierres'];
+    for (const n of nombres) {
+      const existe = await c.query('SELECT to_regclass($1) AS t', ['public.' + n]);
+      if (existe.rows[0].t) {
+        await c.query(`DROP INDEX IF EXISTS ux_${n}_clave`);   // índices propios de la versión anterior (no son datos)
+        await c.query(`DROP INDEX IF EXISTS ux_${n}_id`);
+        await c.query(`ALTER TABLE ${n} RENAME TO ${n}${sufijo}`);
+        console.log(`Migración: ${n} -> ${n}${sufijo}`);
+      }
+    }
+    await c.query('INSERT INTO migraciones (nombre) VALUES ($1)', [MARCA]);
+    await c.query('COMMIT');
+    console.log('Migración única terminada: tablas nuevas y limpias');
+  } catch (e) {
+    await c.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally { c.release(); }
+}
+
 /* ---------- Esquema: se crea solo al arrancar (reintenta hasta que la base responda) ---------- */
 let dbLista = false;
 async function iniciarBD() {
   while (!dbLista) {
     try {
+      await migrarTablasNuevas();
       for (const sql of ddl()) await pool.query(sql);
       dbLista = true;
       console.log('Tablas verificadas/creadas:', TABLAS.map(t => t.nombre).join(', '), ', caja_estado, cierres');
@@ -57,19 +89,22 @@ function auth(req, res, next) {
 app.post('/api/sync', auth, async (req, res) => {
   const body = req.body || {};
   const c = await pool.connect();
+  let tablaActual = '';
   try {
     await c.query('BEGIN');
     for (const t of TABLAS) {
+      tablaActual = t.nombre;
       const rows = filas(t, body[t.campo]);
       if (rows.length) await c.query(upsertSql(t), [JSON.stringify(rows)]);
     }
+    tablaActual = 'caja_estado';
     if (body.caja && typeof body.caja === 'object')
       await c.query('INSERT INTO caja_estado (id, datos, actualizado) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET datos = EXCLUDED.datos, actualizado = now()', [JSON.stringify(body.caja)]);
     await c.query('COMMIT');
     res.json({ ok: true });
   } catch (e) {
     await c.query('ROLLBACK').catch(() => {});
-    console.error('Error en /api/sync:', e.message);
+    console.error('Error en /api/sync (tabla ' + tablaActual + '):', e.message);
     res.status(500).json({ error: 'No se pudo guardar' });
   } finally { c.release(); }
 });
