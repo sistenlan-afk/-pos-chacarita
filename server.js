@@ -85,11 +85,16 @@ app.get('/api/snapshot', auth, async (req, res) => {
   } catch (e) { console.error('Error en /api/snapshot:', e.message); res.status(500).json({ error: 'No se pudo leer' }); }
 });
 
-/* ---------- POST /api/cierre: historial de cierres de turno ---------- */
+/* ---------- POST /api/cierre: historial de cierres de turno ----------
+   CORREGIDO: ahora se guarda la columna "fecha" (antes faltaba y la tabla la exige).
+   La fecha la pone el servidor (formato ISO); la fecha original del POS queda dentro de "datos". */
 app.post('/api/cierre', auth, async (req, res) => {
   const d = req.body || {};
   try {
-    await pool.query('INSERT INTO cierres (cajero, efectivo_esperado, datos) VALUES ($1, $2, $3)', [d.cajero || null, Number(d.efectivoEsperado) || 0, JSON.stringify(d)]);
+    await pool.query(
+      'INSERT INTO cierres (fecha, cajero, efectivo_esperado, datos) VALUES ($1, $2, $3, $4)',
+      [new Date().toISOString(), d.cajero || null, Number(d.efectivoEsperado) || 0, JSON.stringify(d)]
+    );
     res.json({ ok: true });
   } catch (e) { console.error('Error en /api/cierre:', e.message); res.status(500).json({ error: 'No se pudo guardar el cierre' }); }
 });
