@@ -61,11 +61,16 @@ function ddl() {
     t.cols.forEach(([n, tipo]) => sentencias.push(`ALTER TABLE ${t.nombre} ADD COLUMN IF NOT EXISTS ${n} ${tipo}`));
     sentencias.push(`ALTER TABLE ${t.nombre} ADD COLUMN IF NOT EXISTS creado timestamptz DEFAULT now()`);
     sentencias.push(`ALTER TABLE ${t.nombre} ADD COLUMN IF NOT EXISTS actualizado timestamptz DEFAULT now()`);
+    // CORREGIDO: las tablas viejas no tienen la llave única que necesita el guardado (ON CONFLICT).
+    // Se crea un índice único sobre las columnas clave. Va dentro de DO ... EXCEPTION para que, si algo falla
+    // (por ejemplo registros repetidos), el servidor NO se caiga al arrancar.
+    sentencias.push(`DO $$ BEGIN CREATE UNIQUE INDEX IF NOT EXISTS ux_${t.nombre}_clave ON ${t.nombre} (${t.clave.join(', ')}); EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'No se pudo crear indice unico en ${t.nombre}: %', SQLERRM; END $$`);
   });
 
   sentencias.push(`CREATE TABLE IF NOT EXISTS caja_estado (id integer PRIMARY KEY, datos jsonb, actualizado timestamptz DEFAULT now())`);
   sentencias.push(`ALTER TABLE caja_estado ADD COLUMN IF NOT EXISTS datos jsonb`);
   sentencias.push(`ALTER TABLE caja_estado ADD COLUMN IF NOT EXISTS actualizado timestamptz DEFAULT now()`);
+  sentencias.push(`DO $$ BEGIN CREATE UNIQUE INDEX IF NOT EXISTS ux_caja_estado_id ON caja_estado (id); EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'No se pudo crear indice unico en caja_estado: %', SQLERRM; END $$`);
 
   sentencias.push(`CREATE TABLE IF NOT EXISTS cierres (
     id serial PRIMARY KEY,
